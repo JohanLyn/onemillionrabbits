@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+export const VERSION = '0.9.0-beta';
+
 // Shared game state. Every system reads and writes this one object.
 export const G = {
   scene: null,
@@ -32,6 +34,7 @@ export const G = {
   boss: null,
   goldThisRun: 0,
   damageBy: {}, // weapon id -> damage dealt this run
+  settings: null, // the player's settings (see save.js), shared object
 };
 
 export const WORLD = 105; // half-size of the playable meadow

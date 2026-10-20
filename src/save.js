@@ -9,14 +9,19 @@ const defaults = () => ({
   muted: false,
   best: { kills: 0, wave: 0, time: 0 },
   runs: 0,
+  settings: defaultSettings(),
 });
+export const defaultSettings = () => ({ music: 0.7, sfx: 0.8, shake: true, numbers: true, quality: 'auto', haptics: true });
 
 export let save = defaults();
 
 export function loadSave() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) save = { ...defaults(), ...JSON.parse(raw) };
+    if (raw) {
+      const loaded = JSON.parse(raw);
+      save = { ...defaults(), ...loaded, settings: { ...defaultSettings(), ...(loaded.settings || {}) } };
+    }
   } catch {
     save = defaults();
   }

@@ -20,14 +20,23 @@ export function initAudio() {
   comp.ratio.value = 6;
   master.connect(comp).connect(ctx.destination);
   sfxBus = ctx.createGain();
-  sfxBus.gain.value = 0.55;
+  sfxBus.gain.value = 0.7 * vol.sfx;
   sfxBus.connect(master);
   musicBus = ctx.createGain();
-  musicBus.gain.value = 0.32;
+  musicBus.gain.value = 0.45 * vol.music;
   musicBus.connect(master);
   noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
   const d = noiseBuf.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+}
+
+let vol = { music: 0.7, sfx: 0.8 };
+// Settings sliders: 0..1 for each bus.
+export function setVolumes(music, sfx) {
+  vol = { music, sfx };
+  if (!ctx) return;
+  musicBus.gain.setTargetAtTime(0.45 * music, ctx.currentTime, 0.05);
+  sfxBus.gain.setTargetAtTime(0.7 * sfx, ctx.currentTime, 0.05);
 }
 
 export function setMuted(m) {

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { G, rand, pick, damp, clamp } from './core.js';
+import { G, rand, pick } from './core.js';
+import { initCamera, resizeCamera, updateCamera } from './camera.js';
 import { initWorld, updateWorld } from './world.js';
 import { initFx, updateFx, clearFx, banner, burst, ring } from './fx.js';
 import { initEnemies, clearEnemies, updateEnemies, drawEnemies, drawPlayerShadow, director, hordeEvent, spawnBoss, spawnEnemy, queryCircle, damage, E } from './enemies.js';
@@ -9,7 +10,7 @@ import { Player, CHARS } from './player.js';
 import { computeStats, rollOptions, applyOption, openChest, SHOP, shopCost } from './upgrades.js';
 import { applyMod, clearMod, spinWheel, updateWheel, skipWheel } from './chaos.js';
 import { initInput, readInput, input, resetJoystick } from './input.js';
-import { initAudio, sfx, setMuted, startMusic, music } from './audio.js';
+import { initAudio, sfx, setMuted, setVolumes, startMusic, music } from './audio.js';
 import { save, loadSave, writeSave, upgradeLevel } from './save.js';
 import * as UI from './ui.js';
 
@@ -35,44 +36,22 @@ let pixelRatio = Math.min(devicePixelRatio || 1, G.lowPower ? 1.5 : 2);
 renderer.setPixelRatio(pixelRatio);
 G.renderer = renderer;
 G.scene = new THREE.Scene();
-G.camera = new THREE.PerspectiveCamera(40, 1, 0.5, 220);
+initCamera();
 G.frame = 0;
 G.openChest = openChest;
 G.onPlayerDeath = onPlayerDeath;
 
-const camOffset = new THREE.Vector3();
-const camTarget = new THREE.Vector3();
-const _ray = new THREE.Raycaster();
-const _ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-const _hit = new THREE.Vector3();
-
 function resize() {
-  const w = innerWidth, h = innerHeight;
-  renderer.setSize(w, h, false);
-  G.camera.aspect = w / h;
-  // portrait phones pull the camera back so you can see the horde coming
-  const zoom = clamp(0.9 / G.camera.aspect, 1, 1.75);
-  camOffset.set(0, 21 * zoom, 14.5 * zoom);
-  const camDist = camOffset.length();
-  G.scene.fog.near = camDist + 18;
-  G.scene.fog.far = camDist + 80;
-  G.camera.updateProjectionMatrix();
-  // measure how far the visible ground reaches, so spawns happen just off-screen
-  G.camera.position.copy(camOffset);
-  G.camera.lookAt(0, 0, 0);
-  G.camera.updateMatrixWorld();
-  let r = 10;
-  for (const [x, y] of [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, 1], [0, -1], [1, 0], [-1, 0]]) {
-    _ray.setFromCamera({ x, y }, G.camera);
-    if (_ray.ray.intersectPlane(_ground, _hit)) r = Math.max(r, Math.hypot(_hit.x, _hit.z));
-  }
-  G.viewR = Math.min(r, 48);
+  renderer.setSize(innerWidth, innerHeight, false);
+  resizeCamera(innerWidth, innerHeight);
 }
 addEventListener('resize', resize);
 
 // ---------- boot ----------
 loadSave();
+G.settings = save.settings;
 setMuted(save.muted);
+setVolumes(G.settings.music, G.settings.sfx);
 initWorld();
 initFx();
 initEnemies();
@@ -326,7 +305,6 @@ document.addEventListener('visibilitychange', () => {
 // ---------- main loop ----------
 let lastNow = performance.now();
 let perfAcc = 0, perfFrames = 0, slowStreak = 0;
-const camPos = new THREE.Vector3();
 
 function frame(now) {
   requestAnimationFrame(frame);
@@ -396,28 +374,7 @@ function render(dt, realDt) {
   drawPickups();
   drawWeapons();
 
-  // camera: follow the player, orbit lazily on the title screen
-  if (G.state === 'menu') {
-    const a = G.time * 0.08;
-    const r = Math.hypot(camOffset.y, camOffset.z) * 0.85;
-    camPos.set(Math.sin(a) * r * 0.7, r * 0.55, Math.cos(a) * r * 0.7);
-    camTarget.set(0, 1.5, 0);
-    G.camera.position.lerp(camPos, 1 - Math.exp(-3 * realDt));
-  } else {
-    camTarget.x = damp(camTarget.x, p.x, 8, realDt);
-    camTarget.z = damp(camTarget.z, p.z, 8, realDt);
-    camTarget.y = 0;
-    camPos.copy(camTarget).add(camOffset);
-    G.camera.position.lerp(camPos, 1 - Math.exp(-10 * realDt));
-  }
-  if (G.shake > 0) {
-    G.shake = Math.max(0, G.shake - realDt * 2.5);
-    const s = G.shake * G.shake * 0.8;
-    G.camera.position.x += rand(-s, s);
-    G.camera.position.y += rand(-s, s);
-  }
-  G.camera.lookAt(camTarget);
-  if (G.mod?.id === 'jelly') G.camera.rotation.z += Math.sin(G.time * 2.2) * 0.02;
+  updateCamera(realDt);
 
   renderer.render(G.scene, G.camera);
   if (G.state === 'playing' || G.state === 'levelup' || G.state === 'wheel' || G.state === 'paused' || G.state === 'dying') UI.updateHud();
@@ -458,6 +415,7 @@ window.__omr = {
     UI.renderLoadout();
   },
   levelUp: () => G.pendingLevels++,
+  ult: tryUlt,
   advance(seconds, step = 1 / 30) {
     for (let t = 0; t < seconds; t += step) {
       if (G.state === 'levelup') choose(currentOpts[0]);
