@@ -1,0 +1,19 @@
+{
+  "name": "one-million-rabbits",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A cel-shaded horde-survival game: survive a million rabbits with ridiculous weapons.",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build && node scripts/postbuild.js",
+    "preview": "vite preview --host"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "vite": "8.3.4",
+    "vite-plugin-singlefile": "2.3.4"
+  }
+}
