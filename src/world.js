@@ -348,7 +348,7 @@ const KEYS = [
   [0, { top: 0x5aaef5, hor: 0xd8f1ff, fog: 0xc6e9ff, hs: 0xe4f4ff, hg: 0x7aa860, hi: 1.3, sc: 0xfff0d8, si: 2.2, el: 0.75, rim: 0xfff2d6, ri: 0.3, night: 0, cloud: 0.2, deep: 0x3aa6e6, shal: 0x7fdcff }],
   [3, { top: 0x3f98f5, hor: 0xb4e2ff, fog: 0xaedcff, hs: 0xeaf7ff, hg: 0x86b866, hi: 1.38, sc: 0xffffff, si: 2.35, el: 1.15, rim: 0xffffff, ri: 0.28, night: 0, cloud: 0.22, deep: 0x2f9be6, shal: 0x74d8ff }],
   [7, { top: 0x5a92e0, hor: 0xffe2ad, fog: 0xf2dcae, hs: 0xffeccc, hg: 0x8c9e52, hi: 1.25, sc: 0xffd08a, si: 2.35, el: 0.55, rim: 0xffd890, ri: 0.4, night: 0, cloud: 0.2, deep: 0x3c8fd0, shal: 0x8fd6e8 }],
-  [9.5, { top: 0x4c5cb4, hor: 0xffa070, fog: 0xf0aa86, hs: 0xffb4c4, hg: 0x5c7a64, hi: 1.15, sc: 0xffa060, si: 2.3, el: 0.22, rim: 0xffa060, ri: 0.55, night: 0.05, cloud: 0.12, deep: 0x3a5aa8, shal: 0xe89a8a }],
+  [9.5, { top: 0x4c5cb4, hor: 0xffa070, fog: 0xf0aa86, hs: 0xffc4c0, hg: 0x668a5c, hi: 1.2, sc: 0xffa866, si: 2.3, el: 0.22, rim: 0xffa060, ri: 0.55, night: 0.05, cloud: 0.12, deep: 0x3a5aa8, shal: 0xe89a8a }],
   [11.5, { top: 0x26286a, hor: 0xa2608e, fog: 0x7a5a8e, hs: 0xa898f0, hg: 0x3a5262, hi: 1.0, sc: 0xd8a0ff, si: 1.2, el: 0.4, rim: 0xd0a8ff, ri: 0.5, night: 0.55, cloud: 0.05, deep: 0x232a66, shal: 0x5a4a8e }],
   [13.5, { top: 0x0a0f2e, hor: 0x24305e, fog: 0x1c2850, hs: 0x7c94e6, hg: 0x22304a, hi: 0.95, sc: 0x9fb6ff, si: 0.95, el: 0.95, rim: 0xa8c8ff, ri: 0.6, night: 1, cloud: 0, deep: 0x0e1638, shal: 0x24387a }],
   [19, { top: 0x0a0f2e, hor: 0x24305e, fog: 0x1c2850, hs: 0x7c94e6, hg: 0x22304a, hi: 0.95, sc: 0x9fb6ff, si: 0.95, el: 0.95, rim: 0xa8c8ff, ri: 0.6, night: 1, cloud: 0, deep: 0x0e1638, shal: 0x24387a }],

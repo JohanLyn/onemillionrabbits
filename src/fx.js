@@ -64,8 +64,7 @@ export function initFx() {
   }
   pg.setAttribute('color', new THREE.BufferAttribute(pc, 3));
   pillar = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ color: 0x8fe8ff, vertexColors: true, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false }));
-  pillar.visible = false;
-  pillar.renderOrder = 3;
+  pillar.renderOrder = 3; // left visible until the first frame so renderer.compile() warms its shader
   pillar.frustumCulled = false;
   G.scene.add(pillar);
 
@@ -390,10 +389,10 @@ export function updateFx(dt, realDt) {
   }
   smokeInst.end();
 
-  if (pillarT > 0) {
+  if (pillarT <= 0) pillar.visible = false;
+  else {
     pillarT -= dt;
     const age = 1 - Math.max(0, pillarT) / PILLAR_LIFE;
-    if (pillarT <= 0) pillar.visible = false;
     pillar.position.set(pillarX, 0, pillarZ);
     const w = 1.3 * (1 - age * 0.7) * Math.min(1, age * 10);
     pillar.scale.set(w, 14 * Math.min(1, age * 5), w);

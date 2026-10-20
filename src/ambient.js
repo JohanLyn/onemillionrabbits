@@ -10,6 +10,7 @@ const _c = new THREE.Color();
 const BF_COLS = [0xffd23f, 0xff8fc8, 0x9bd8ff, 0xffffff, 0xff9a3c].map((c) => new THREE.Color(c));
 const PT_COLS = [0xffffff, 0xffd6ea, 0xfff4b8, 0xffc2dc].map((c) => new THREE.Color(c));
 const FF_COL = new THREE.Color(0xd8ff7a);
+let initLow = false;
 let hx = 20, zb = 26, zf = 12; // box half-width, distance behind (screen top) and in front
 
 function butterflyGeo() {
@@ -35,7 +36,7 @@ const wrap = (v, c, lo, hi) => {
 };
 
 export function initAmbient() {
-  const low = G.lowPower;
+  const low = (initLow = G.lowPower);
   const nB = low ? 8 : 18, nF = low ? 18 : 42, nP = low ? 18 : 46;
   flies = new Inst(butterflyGeo(), nB, { mat: vtoon({ side: THREE.DoubleSide }), outline: 0, colors: true });
   bugs = new Inst(fireflyGeo(), nF, {
@@ -58,10 +59,13 @@ export function updateAmbient(dt, night) {
   zb = vr * 0.95;
   zf = vr * 0.5;
   const day = 1 - night;
+  // a Quality switch to low power mid-session halves the swarm
+  const share = G.lowPower && !initLow ? 0.5 : 1;
 
   flies.begin();
   if (day > 0.05) {
-    for (const b of BF) {
+    for (let i = 0, n = Math.ceil(BF.length * share); i < n; i++) {
+      const b = BF[i];
       b.t += dt;
       // wander: a slowly turning heading with a little flutter
       b.a += Math.sin(b.t * 0.7) * dt * 1.4 + Math.sin(b.t * 2.3) * dt;
@@ -78,7 +82,8 @@ export function updateAmbient(dt, night) {
 
   bugs.begin();
   if (night > 0.05) {
-    for (const f of FF) {
+    for (let i = 0, n = Math.ceil(FF.length * share); i < n; i++) {
+      const f = FF[i];
       f.t += dt;
       f.x = wrap(f.x + Math.sin(f.t * 0.5 + f.s * 7) * dt * 0.9, ax, hx, hx);
       f.z = wrap(f.z + Math.cos(f.t * 0.37 + f.s * 3) * dt * 0.9, az, zb, zf);
@@ -92,7 +97,7 @@ export function updateAmbient(dt, night) {
   bugs.end();
 
   petals.begin();
-  const nP = day > 0.05 ? PT.length : 0;
+  const nP = day > 0.05 ? Math.ceil(PT.length * share) : 0;
   for (let i = 0; i < nP; i++) {
     const q = PT[i];
     q.t += dt;

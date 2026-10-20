@@ -64,7 +64,8 @@ function cloudGeo() {
 export function initSky() {
   const mat = new THREE.ShaderMaterial({ uniforms: skyU, vertexShader: VERT, fragmentShader: FRAG, side: THREE.BackSide, depthWrite: false, fog: false });
   dome = new THREE.Mesh(new THREE.SphereGeometry(SKY_R, 32, 16), mat);
-  dome.renderOrder = -10;
+  // drawn after the opaque scene so early depth rejects every pixel the ground already covers
+  dome.renderOrder = 10;
   dome.frustumCulled = false;
   G.scene.add(dome);
 
