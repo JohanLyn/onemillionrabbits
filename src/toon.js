@@ -14,25 +14,87 @@ export function gradientMap() {
   return gradient;
 }
 
-export function toon(color = 0xffffff, opts = {}) {
-  return new THREE.MeshToonMaterial({ color, gradientMap: gradientMap(), ...opts });
+// Uniforms shared by every toon program, driven by the time of day (world.js).
+export const U = {
+  time: { value: 0 },
+  rim: { value: new THREE.Color(0xfff2d6) }, // rim light tint, pre-scaled by its strength
+  glow: { value: 0 }, // night glow for mushrooms and flowers
+  cloudTex: { value: null },
+  cloudOff: { value: new THREE.Vector2() },
+  cloudAmt: { value: 0.2 },
+};
+
+// A cel-shaded rim light along the upper silhouette, so models pop off the grass.
+const RIM = `
+  float rimF = 1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);
+  rimF = smoothstep(0.62, 0.7, rimF) * smoothstep(-0.1, 0.5, normal.y);
+  outgoingLight += rimColor * rimF * (diffuseColor.rgb + 0.2);
+`;
+// Wind sway: vertices above `y0` bend, phased by world position so gusts roll across the meadow.
+const swayChunk = ([k, y0]) => `
+  #ifdef USE_INSTANCING
+    vec2 swayP = instanceMatrix[3].xz;
+  #else
+    vec2 swayP = vec2(modelMatrix[3].x, modelMatrix[3].z);
+  #endif
+  float swayW = sin(uTime * 1.6 + swayP.x * 0.31 + swayP.y * 0.23) + 0.35 * sin(uTime * 3.7 + swayP.x * 0.9);
+  float swayH = max(transformed.y - ${y0.toFixed(2)}, 0.0) * ${k.toFixed(3)};
+  transformed.x += swayW * swayH;
+  transformed.z += swayW * swayH * 0.45;
+`;
+
+// Patch a toon material: rim light always, plus optional wind sway, night glow
+// (vertex colour as emissive) and the ground's cloud shadows and colour variation.
+function shade(m, f = {}) {
+  const key = 'toon' + (f.sway ? 's' + f.sway.join(',') : '') + (f.glow ? 'g' : '') + (f.ground ? 'G' : '');
+  m.onBeforeCompile = (s) => {
+    s.uniforms.rimColor = U.rim;
+    let vs = s.vertexShader;
+    let fs = 'uniform vec3 rimColor;\n' + s.fragmentShader.replace('#include <opaque_fragment>', RIM + '#include <opaque_fragment>');
+    if (f.sway) {
+      s.uniforms.uTime = U.time;
+      vs = 'uniform float uTime;\n' + vs.replace('#include <begin_vertex>', '#include <begin_vertex>\n' + swayChunk(f.sway));
+    }
+    if (f.glow) {
+      s.uniforms.glowAmt = U.glow;
+      fs = 'uniform float glowAmt;\n' + fs.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * glowAmt;');
+    }
+    if (f.ground) {
+      Object.assign(s.uniforms, { cloudTex: U.cloudTex, cloudOff: U.cloudOff, cloudAmt: U.cloudAmt });
+      vs = 'varying vec2 vWXZ;\n' + vs.replace('#include <project_vertex>', '#include <project_vertex>\nvWXZ = (modelMatrix * vec4(transformed, 1.0)).xz;');
+      fs = 'varying vec2 vWXZ;\nuniform sampler2D cloudTex;\nuniform vec2 cloudOff;\nuniform float cloudAmt;\n' + fs
+        .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= mix(0.84, 1.1, texture2D(cloudTex, vWXZ * 0.0045).g);')
+        .replace('#include <opaque_fragment>', 'outgoingLight *= 1.0 - cloudAmt * smoothstep(0.4, 0.52, texture2D(cloudTex, vWXZ * 0.0085 + cloudOff).r);\n#include <opaque_fragment>');
+    }
+    s.vertexShader = vs;
+    s.fragmentShader = fs;
+  };
+  m.customProgramCacheKey = () => key;
+  return m;
 }
-export const vtoon = (opts = {}) => toon(0xffffff, { vertexColors: true, ...opts });
+
+// `fx` holds shader extras, not three.js options: { sway: [strength, fromY], glow: true, ground: true }
+export function toon(color = 0xffffff, opts = {}, fx) {
+  return shade(new THREE.MeshToonMaterial({ color, gradientMap: gradientMap(), ...opts }), fx);
+}
+export const vtoon = (opts = {}, fx) => toon(0xffffff, { vertexColors: true, ...opts }, fx);
 
 // Inverted-hull outline: back faces pushed out along the normal, drawn flat dark.
+// `sway` must match the body material's so the ink bends along with it.
 const outlineCache = new Map();
-export function outlineMat(width = 0.04, color = 0x2b1d3a) {
-  const key = width + ':' + color;
+export function outlineMat(width = 0.04, color = 0x2b1d3a, sway = null, fog = true) {
+  const key = width + ':' + color + ':' + sway + ':' + fog;
   if (outlineCache.has(key)) return outlineCache.get(key);
-  const m = new THREE.MeshBasicMaterial({ color, side: THREE.BackSide });
+  const m = new THREE.MeshBasicMaterial({ color, side: THREE.BackSide, fog });
   m.onBeforeCompile = (s) => {
     s.uniforms.outlineWidth = { value: width };
-    s.vertexShader = 'uniform float outlineWidth;\n' + s.vertexShader.replace(
+    s.uniforms.uTime = U.time;
+    s.vertexShader = 'uniform float outlineWidth;\nuniform float uTime;\n' + s.vertexShader.replace(
       '#include <begin_vertex>',
-      '#include <begin_vertex>\ntransformed += normal * outlineWidth;'
+      '#include <begin_vertex>\n' + (sway ? swayChunk(sway) : '') + 'transformed += normal * outlineWidth;'
     );
   };
-  m.customProgramCacheKey = () => 'outline';
+  m.customProgramCacheKey = () => 'outline' + (sway ? sway.join(',') : '');
   outlineCache.set(key, m);
   return m;
 }
@@ -83,7 +145,7 @@ export function merge(parts) {
 // An InstancedMesh plus an outline InstancedMesh that shares its matrices.
 // Usage per frame: begin(); push(...) for every visible thing; end().
 export class Inst {
-  constructor(geo, capacity, { mat = vtoon(), outline = 0.04, colors = false, add = true } = {}) {
+  constructor(geo, capacity, { mat = vtoon(), outline = 0.04, colors = false, add = true, sway = null } = {}) {
     this.capacity = capacity;
     this.mesh = new THREE.InstancedMesh(geo, mat, capacity);
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -94,7 +156,7 @@ export class Inst {
       this.mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
     }
     if (outline) {
-      this.ol = new THREE.InstancedMesh(geo, outlineMat(outline), capacity);
+      this.ol = new THREE.InstancedMesh(geo, outlineMat(outline, undefined, sway), capacity);
       this.ol.instanceMatrix = this.mesh.instanceMatrix;
       this.ol.frustumCulled = false;
       this.ol.count = 0;
