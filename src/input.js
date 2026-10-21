@@ -6,6 +6,9 @@ export const input = { x: 0, z: 0, ult: false, pause: false };
 const keys = new Set();
 const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0 };
 let joyEl, knobEl;
+// Stick feel, in CSS pixels: the knob travels up to TRAVEL, full speed is reached at FULL,
+// and nothing happens inside DEAD so a resting thumb doesn't drift.
+const TRAVEL = 50, FULL = 38, DEAD = 7;
 
 export function initInput(canvas) {
   joyEl = document.getElementById('joy');
@@ -16,13 +19,16 @@ export function initInput(canvas) {
     keys.add(k);
     if (k === ' ' || k === 'e' || k === 'q') input.ult = true;
     if (k === 'escape' || k === 'p') input.pause = true;
-    if (k.startsWith('arrow') || k === ' ') e.preventDefault();
+    // stop arrows and space from scrolling the page mid-run, but leave menus (sliders, buttons) alone
+    const menu = G.state === 'menu' || G.state === 'paused' || G.state === 'gameover' || G.state === 'victory';
+    if ((k.startsWith('arrow') || k === ' ') && !menu) e.preventDefault();
   });
   addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
   addEventListener('blur', () => keys.clear());
 
   const start = (e) => {
-    if (G.state !== 'playing' || joy.id !== null) return;
+    // during the resume countdown you can already put your thumb down
+    if ((G.state !== 'playing' && G.state !== 'countdown') || joy.id !== null) return;
     const t = e.changedTouches ? e.changedTouches[0] : e;
     joy.id = e.changedTouches ? t.identifier : 'mouse';
     joy.ox = joy.x = t.clientX;
@@ -41,11 +47,11 @@ export function initInput(canvas) {
       joy.x = t.clientX;
       joy.y = t.clientY;
       let dx = joy.x - joy.ox, dy = joy.y - joy.oy;
-      const d = Math.hypot(dx, dy), max = 50;
-      if (d > max) {
+      const d = Math.hypot(dx, dy);
+      if (d > TRAVEL) {
         // drag the base along so the stick never feels stuck
-        joy.ox += (dx / d) * (d - max);
-        joy.oy += (dy / d) * (d - max);
+        joy.ox += (dx / d) * (d - TRAVEL);
+        joy.oy += (dy / d) * (d - TRAVEL);
         joyEl.style.left = joy.ox + 'px';
         joyEl.style.top = joy.oy + 'px';
         dx = joy.x - joy.ox;
@@ -73,6 +79,8 @@ export function initInput(canvas) {
   canvas.addEventListener('mousedown', start);
   addEventListener('mousemove', move);
   addEventListener('mouseup', end);
+  // a long press shouldn't open a context menu or select anything mid-run
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
 export function resetJoystick() {
@@ -89,8 +97,9 @@ export function readInput() {
   if (joy.id !== null) {
     const dx = joy.x - joy.ox, dy = joy.y - joy.oy;
     const d = Math.hypot(dx, dy);
-    if (d > 6) {
-      const m = Math.min(1, d / 50);
+    if (d > DEAD) {
+      // ramp from zero at the dead zone edge, so slow walking is possible without a jump
+      const m = Math.min(1, (d - DEAD) / (FULL - DEAD));
       x += (dx / d) * m;
       z += (dy / d) * m;
     }

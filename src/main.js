@@ -10,11 +10,18 @@ import { Player, CHARS } from './player.js';
 import { computeStats, rollOptions, applyOption, openChest, SHOP, shopCost } from './upgrades.js';
 import { applyMod, clearMod, spinWheel, updateWheel, skipWheel } from './chaos.js';
 import { initInput, readInput, input, resetJoystick } from './input.js';
-import { initAudio, sfx, setMuted, setVolumes, startMusic, music } from './audio.js';
-import { save, loadSave, writeSave, upgradeLevel } from './save.js';
+import { initAudio, sfx, setMuted, startMusic, music } from './audio.js';
+import { save, loadSave, writeSave, resetSave, upgradeLevel } from './save.js';
+import { checkAchievements, observe, resetRunTracking, run, sawMod, firedUlt, setUnlockHandler } from './achievements.js';
+import { tip, inlineTip, updateTips, clearTips, dismissTip, skipTips } from './tutorial.js';
+import { applySettings, bindSettings, renderSettings, vibrate } from './settings.js';
+import { initPwa, whenInstallable, promptInstall, canFullscreen, toggleFullscreen } from './pwa.js';
 import * as UI from './ui.js';
 
 const WAVE_LEN = 40;
+const COUNTDOWN = 2.1; // seconds of 3-2-1 after unpausing
+const VICTORY_BONUS = 250;
+const FIRST_WIN_BONUS = 150; // first win with each survivor
 const QUIPS = [
   'The rabbits have unionized.',
   'Death by a thousand nibbles.',
@@ -27,12 +34,16 @@ const QUIPS = [
 
 // ---------- renderer / scene ----------
 const canvas = document.getElementById('c');
+loadSave();
+G.settings = save.settings;
 G.touch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-G.lowPower = G.touch || (navigator.hardwareConcurrency || 8) <= 4;
+// quality is read once at boot: every system sizes its buffers from G.lowPower when it initializes
+const quality = (G.bootQuality = save.settings.quality);
+G.lowPower = quality === 'low' || (quality === 'auto' && (G.touch || (navigator.hardwareConcurrency || 8) <= 4));
 if (G.touch) document.body.classList.add('touch');
 
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-let pixelRatio = Math.min(devicePixelRatio || 1, G.lowPower ? 1.5 : 2);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: quality !== 'low', powerPreference: 'high-performance' });
+let pixelRatio = Math.min(devicePixelRatio || 1, quality === 'low' ? 1 : G.lowPower ? 1.5 : 2);
 renderer.setPixelRatio(pixelRatio);
 G.renderer = renderer;
 G.scene = new THREE.Scene();
@@ -48,10 +59,9 @@ function resize() {
 addEventListener('resize', resize);
 
 // ---------- boot ----------
-loadSave();
-G.settings = save.settings;
 setMuted(save.muted);
-setVolumes(G.settings.music, G.settings.sfx);
+applySettings();
+initPwa();
 initWorld();
 initFx();
 initEnemies();
@@ -62,34 +72,74 @@ computeStats();
 initInput(canvas);
 resize();
 
+const $ = (id) => document.getElementById(id);
+let settingsFrom = 'menu';
 UI.renderHow();
 UI.bindButtons({
   play: startRun,
   screen: (id) => {
-    if (id === 'menu') toMenu();
-    else {
-      if (id === 'shop') UI.renderShop(buy);
-      UI.show(id);
+    if (id === 'menu') {
+      if (G.state === 'menu') showMenu();
+      else toMenu();
+      return;
     }
+    if (id === 'shop') UI.renderShop(buy);
+    if (id === 'trophies') UI.renderTrophies();
+    UI.show(id);
+  },
+  settings: (from) => {
+    settingsFrom = from;
+    renderSettings();
+    UI.show('settings');
   },
   mute: () => {
     save.muted = !save.muted;
     setMuted(save.muted);
     writeSave();
     initAudio();
-    UI.renderMenu(selectChar);
-    document.getElementById('pauseMute').textContent = save.muted ? 'SOUND: OFF' : 'SOUND: ON';
+    refreshSound();
   },
   pause,
   resume,
-  quit: () => {
-    resume();
-    G.player.hp = 0;
+  quit: async () => {
+    const ok = await UI.confirmBox({ title: 'GIVE UP?', text: 'This run ends here. You keep the golden carrots you earned.', yes: 'GIVE UP', no: 'KEEP GOING', emoji: '🏳️' });
+    if (!ok || G.state !== 'paused') return;
+    G.state = 'playing';
+    quitRun = true;
     onPlayerDeath(true);
   },
   ult: tryUlt,
   skipWheel,
 });
+bindSettings({
+  onChange: refreshSound,
+  onReset: async () => {
+    const ok = await UI.confirmBox({ title: 'RESET PROGRESS?', text: 'Golden carrots, survivors, Shed upgrades, trophies and best runs all go. This can\'t be undone.', yes: 'WIPE IT', no: 'KEEP IT', emoji: '🧨' });
+    if (!ok) return;
+    resetSave();
+    toMenu();
+    banner('FRESH START', 'the rabbits forgot you too');
+  },
+});
+$('settingsBack').dataset.esc = '';
+$('settingsBack').onclick = () => (settingsFrom === 'pause' && G.state === 'paused' ? UI.showPause() : showMenu());
+$('coachOk').onclick = dismissTip;
+$('coachSkip').onclick = skipTips;
+$('installBtn').onclick = promptInstall;
+whenInstallable((on) => ($('installBtn').hidden = !on));
+$('fsBtn').hidden = !(G.touch && canFullscreen());
+$('fsBtn').onclick = toggleFullscreen;
+setUnlockHandler(UI.trophyToast);
+
+function refreshSound() {
+  UI.renderMenu(selectChar);
+  $('pauseMute').textContent = save.muted ? 'SOUND: OFF' : 'SOUND: ON';
+  if (!$('settings').hidden) renderSettings();
+}
+function showMenu() {
+  UI.renderMenu(selectChar);
+  UI.show('menu');
+}
 
 function selectChar(id) {
   initAudio();
@@ -107,6 +157,7 @@ function selectChar(id) {
   writeSave();
   G.player.reset(id);
   computeStats();
+  checkAchievements();
   UI.renderMenu(selectChar);
 }
 
@@ -117,6 +168,7 @@ function buy(id) {
   save.upgrades[id] = upgradeLevel(id) + 1;
   writeSave();
   sfx('gold');
+  checkAchievements();
   UI.renderShop(buy);
 }
 
@@ -143,6 +195,10 @@ function resetRun() {
   G.bornFlash = 0;
   music.boss = false;
   music.intensity = 0;
+  won = quitRun = false;
+  goT = 0;
+  UI.setCountdown('');
+  clearTips();
 }
 
 function toMenu() {
@@ -152,8 +208,7 @@ function toMenu() {
   computeStats();
   G.state = 'menu';
   UI.hud(false);
-  UI.renderMenu(selectChar);
-  UI.show('menu');
+  showMenu();
   const kinds = ['bunny', 'bunny', 'bunny', 'hare', 'chonk', 'jackalope'];
   for (let i = 0; i < 34; i++) {
     const a = rand(0, Math.PI * 2), d = rand(4, 18);
@@ -173,6 +228,8 @@ function startRun() {
   G.rerolls = 1 + upgradeLevel('reroll') + (c.mods.rerolls || 0);
   save.runs = (save.runs || 0) + 1;
   writeSave();
+  goldAtStart = save.gold;
+  resetRunTracking();
   G.state = 'playing';
   resetJoystick();
   UI.resetHudCache();
@@ -181,6 +238,8 @@ function startRun() {
   UI.show();
   banner('WAVE 1', 'survive the horde');
   G.time = 0;
+  tip('move');
+  tip('auto');
 }
 
 function nextWave() {
@@ -190,7 +249,9 @@ function nextWave() {
   clearMod();
   G.state = 'wheel';
   UI.show('wheel');
+  inlineTip('wheel', $('wheelTip'));
   spinWheel((mod) => {
+    sawMod(mod.id);
     applyMod(mod);
     G.state = 'playing';
     UI.show();
@@ -209,6 +270,16 @@ function openLevelUp() {
   currentOpts = rollOptions();
   sfx('levelup');
   UI.showLevelUp(currentOpts, choose, reroll, G.pendingLevels > 1 ? `LEVEL UP! ×${G.pendingLevels}` : 'LEVEL UP!');
+  levelTip();
+}
+// the fusion tip wins over the how-to-pick tip; a tip stays up for the rest of its level-up chain
+let tipChain = false;
+function levelTip() {
+  const el = $('luTip');
+  const fusion = currentOpts.some((o) => o.kind === 'fusion');
+  if (fusion && inlineTip('fusion', el)) tipChain = false;
+  else if (inlineTip('levelup', el)) tipChain = true;
+  else el.hidden = !tipChain;
 }
 function choose(o) {
   if (G.state !== 'levelup') return;
@@ -219,6 +290,7 @@ function choose(o) {
   UI.renderLoadout();
   if (G.pendingLevels > 0) openLevelUp();
   else {
+    tipChain = false;
     G.state = 'playing';
     UI.show();
   }
@@ -228,29 +300,51 @@ function reroll() {
   G.rerolls--;
   currentOpts = rollOptions();
   UI.showLevelUp(currentOpts, choose, reroll);
+  levelTip();
 }
 
 function pause() {
-  if (G.state !== 'playing') return;
+  if (G.state !== 'playing' && G.state !== 'countdown') return;
   G.state = 'paused';
+  UI.setCountdown('');
   resetJoystick();
   UI.showPause();
 }
+// unpausing counts 3-2-1 so you can find the horde again before it finds you
 function resume() {
   if (G.state !== 'paused') return;
-  G.state = 'playing';
+  G.state = 'countdown';
+  countT = COUNTDOWN;
   UI.show();
 }
 
 function tryUlt() {
   if (G.state !== 'playing' || G.ultCharge < G.stats.ultCost) return;
   G.ultCharge = 0;
+  firedUlt();
   fireUltimate();
 }
 
-let dyingT = 0, won = false;
+let dyingT = 0, won = false, quitRun = false, countT = 0, goT = 0, goldAtStart = 0;
+
+// The content code calls this when the final boss falls (and it fires if the counter ever hits zero).
+function onVictory() {
+  if (G.state !== 'playing') return;
+  won = true;
+  G.state = 'dying';
+  dyingT = 2.4;
+  G.player.invuln = 1e9;
+  resetJoystick();
+  clearTips();
+  banner('VICTORY!', 'the meadow is yours');
+  sfx('fanfare');
+  vibrate([60, 40, 60, 40, 160]);
+}
+G.onVictory = onVictory;
+
 function onPlayerDeath(gaveUp = false) {
   const p = G.player;
+  if (G.state !== 'playing') return;
   if (!gaveUp && upgradeLevel('revive') > 0 && !p.revived) {
     p.revived = true;
     p.hp = p.maxHp * 0.6;
@@ -269,38 +363,64 @@ function onPlayerDeath(gaveUp = false) {
   G.state = 'dying';
   dyingT = gaveUp ? 0.2 : 1.8;
   sfx('die');
+  if (!gaveUp) vibrate(220);
   resetJoystick();
+  clearTips();
 }
 
 function gameOver() {
-  const gold = G.goldThisRun + Math.floor(G.kills / 60) + G.wave * 2;
+  const c = save.char;
+  const breakdown = { pickups: G.goldThisRun, kills: Math.floor(G.kills / 60), waves: G.wave * 2 };
+  if (won) {
+    breakdown.victory = VICTORY_BONUS + (save.winsBy[c] ? 0 : FIRST_WIN_BONUS);
+    save.victories = (save.victories || 0) + 1;
+    save.winsBy[c] = (save.winsBy[c] || 0) + 1;
+  }
+  const gold = breakdown.pickups + breakdown.kills + breakdown.waves + (breakdown.victory || 0);
   save.gold += gold;
+  // a record only counts once there is an earlier run to beat
   const b = save.best;
-  if (G.kills > b.kills) b.kills = G.kills;
-  if (G.wave > b.wave) b.wave = G.wave;
-  if (G.runTime > b.time) b.time = G.runTime;
+  const prev = b.kills > 0 ? { ...b } : null;
+  b.kills = Math.max(b.kills, G.kills);
+  b.wave = Math.max(b.wave, G.wave);
+  b.time = Math.max(b.time, G.runTime);
+  b.born = Math.max(b.born || 0, G.born);
+  save.life.kills += G.kills;
+  checkAchievements();
+  breakdown.trophies = run.achGold;
   writeSave();
-  G.state = 'gameover';
+  const afford = Object.keys(CHARS).filter((id) => !save.unlocked.includes(id) && CHARS[id].price > goldAtStart && CHARS[id].price <= save.gold).map((id) => CHARS[id]);
+  const r = { gold: gold + run.achGold, breakdown, prev, quip: pick(QUIPS), quit: quitRun, unlocked: run.unlocked, afford };
+  G.state = won ? 'victory' : 'gameover';
+  UI.clearToasts();
   UI.hud(false);
-  UI.showGameOver({ gold, won, quip: pick(QUIPS) });
-  won = false;
+  if (won) UI.showVictory(r);
+  else UI.showGameOver(r);
+  won = quitRun = false;
 }
 
 // ---------- keys outside the joystick ----------
+// (arrow keys and Escape on menus belong to the menu navigation in ui.js)
 addEventListener('keydown', (e) => {
-  if (G.state === 'levelup' && /^[1-4]$/.test(e.key)) {
-    const o = currentOpts?.[Number(e.key) - 1];
+  if (UI.confirmOpen() || e.repeat) return;
+  const k = e.key.toLowerCase();
+  const onControl = document.activeElement?.matches?.('button, a, input');
+  if (G.state === 'levelup' && /^[1-4]$/.test(k)) {
+    const o = currentOpts?.[Number(k) - 1];
     if (o) choose(o);
-  } else if (G.state === 'levelup' && e.key.toLowerCase() === 'r') reroll();
-  else if (G.state === 'paused' && (e.key === 'Escape' || e.key.toLowerCase() === 'p')) {
+  } else if (G.state === 'levelup' && k === 'r') reroll();
+  else if (G.state === 'paused' && k === 'p' && !$('pause').hidden) {
     input.pause = false;
     resume();
-  } else if (G.state === 'wheel' && (e.key === ' ' || e.key === 'Enter')) skipWheel();
-  else if ((G.state === 'menu' || G.state === 'gameover') && e.key === 'Enter') startRun();
+  } else if (G.state === 'wheel' && (k === ' ' || k === 'enter')) skipWheel();
+  else if (k === 'enter' && !onControl && ((G.state === 'menu' && !$('menu').hidden) || G.state === 'gameover' || G.state === 'victory')) startRun();
 });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) pause();
 });
+// iOS Safari ignores user-scalable=no, so stop pinch and double-tap zoom by hand
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+document.addEventListener('dblclick', (e) => e.preventDefault());
 
 // ---------- main loop ----------
 let lastNow = performance.now();
@@ -336,19 +456,23 @@ function tick(realDt) {
     updatePickups(dt);
     G.hurtFlash -= realDt;
     G.bornFlash -= realDt;
-    if (G.remaining <= 0) {
-      won = true;
-      onPlayerDeath(true);
-    }
+    watch(realDt);
+    if (G.remaining <= 0) onVictory();
     if (G.waveTime >= WAVE_LEN && G.state === 'playing') nextWave();
     if (G.pendingLevels > 0 && G.state === 'playing') openLevelUp();
+  } else if (G.state === 'countdown') {
+    countT -= realDt;
+    if (countT <= 0) {
+      G.state = 'playing';
+      goT = 0.6;
+    }
   } else if (G.state === 'dying') {
     dt = realDt * 0.3;
     G.time += dt;
     updateEnemies(dt);
     dyingT -= realDt;
     if (dyingT <= 0) gameOver();
-  } else if (G.state === 'menu' || G.state === 'gameover') {
+  } else if (G.state === 'menu' || G.state === 'gameover' || G.state === 'victory') {
     dt = realDt;
     G.time += dt;
     if (G.state === 'menu') {
@@ -362,7 +486,24 @@ function tick(realDt) {
     updateWheel(realDt);
   }
   input.ult = input.pause = false;
+  goT -= realDt;
+  UI.setCountdown(G.state === 'countdown' ? String(Math.ceil((countT / COUNTDOWN) * 3)) : goT > 0 ? 'GO!' : '');
   return dt;
+}
+
+// Reacts to what happened this tick: tips, haptics, trophies.
+function watch(realDt) {
+  for (const ev of observe()) {
+    if (ev === 'hurt') vibrate(25);
+    else if (ev === 'bighurt') vibrate(70);
+    else if (ev === 'born') tip('breed');
+    else if (ev === 'ultready') tip('ult');
+    else if (ev === 'golden') tip('golden');
+    else if (ev === 'boss') tip('boss');
+  }
+  if (G.kills >= 3) tip('carrots');
+  updateTips(realDt);
+  if (G.frame % 15 === 0) checkAchievements();
 }
 
 function render(dt, realDt) {
@@ -377,7 +518,7 @@ function render(dt, realDt) {
   updateCamera(realDt);
 
   renderer.render(G.scene, G.camera);
-  if (G.state === 'playing' || G.state === 'levelup' || G.state === 'wheel' || G.state === 'paused' || G.state === 'dying') UI.updateHud();
+  if (G.state === 'playing' || G.state === 'countdown' || G.state === 'levelup' || G.state === 'wheel' || G.state === 'paused' || G.state === 'dying') UI.updateHud();
 
   // adaptive resolution: if we keep dropping frames, render fewer pixels
   perfAcc += realDt;
@@ -386,7 +527,7 @@ function render(dt, realDt) {
     const avg = perfAcc / perfFrames;
     if (avg > 1 / 45 && G.state === 'playing') slowStreak++;
     else slowStreak = 0;
-    if (slowStreak >= 2 && pixelRatio > 1) {
+    if (slowStreak >= 2 && pixelRatio > 1 && quality !== 'high') {
       pixelRatio = Math.max(1, pixelRatio - 0.25);
       renderer.setPixelRatio(pixelRatio);
       resize();
@@ -407,6 +548,7 @@ requestAnimationFrame(frame);
 window.__omr = {
   G,
   E,
+  save,
   startRun,
   give(id, level = 5) {
     const w = G.weapons.find((x) => x.id === id) || addWeapon(id);
@@ -416,6 +558,7 @@ window.__omr = {
   },
   levelUp: () => G.pendingLevels++,
   ult: tryUlt,
+  win: () => G.onVictory(),
   advance(seconds, step = 1 / 30) {
     for (let t = 0; t < seconds; t += step) {
       if (G.state === 'levelup') choose(currentOpts[0]);
