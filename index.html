@@ -5,6 +5,10 @@
 <title>One Million Rabbits</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#2b1d3a">
+<meta name="description" content="A cel-shaded horde-survival game. One million rabbits, one toaster. Plays in the browser on laptops and phones.">
+<meta name="apple-mobile-web-app-title" content="1M Rabbits">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%90%87%3C/text%3E%3C/svg%3E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -40,6 +44,13 @@
         </div>
       </div>
       <div id="bossbar" hidden><span id="bossName">BIG BUN</span><div id="bossFill"></div></div>
+      <div id="toasts" aria-live="polite">
+        <div id="coach" class="coach" hidden>
+          <span id="coachEm" class="coach-em">🐇</span>
+          <p id="coachText"></p>
+          <div class="coach-btns"><button id="coachOk" class="btn small">GOT IT</button><button id="coachSkip" class="link">skip tips</button></div>
+        </div>
+      </div>
     </div>
     <div id="loadout"></div>
     <button id="ultBtn" aria-label="Orbital Carrot Strike">
@@ -52,23 +63,40 @@
     <div id="floaters"></div>
     <div id="banner"></div>
     <div id="hurt"></div>
+    <div id="countdown" aria-live="assertive"></div>
   </div>
 
   <!-- Title screen -->
   <div id="menu" class="screen">
     <div class="menu-inner">
-      <h1 class="logo"><span class="l1">ONE MILLION</span><span class="l2">RABBITS</span></h1>
+      <div class="logo-wrap">
+        <h1 class="logo"><span class="l1">ONE MILLION</span><span class="l2">RABBITS</span></h1>
+        <span class="beta">BETA<small id="verBadge"></small></span>
+      </div>
       <p class="tag">They hop. They multiply. You have a toaster.</p>
       <div class="gold-pill">🥕 <b id="goldMenu">0</b> golden carrots</div>
       <h2 class="section-h">Pick your survivor</h2>
       <div id="chars" class="chars"></div>
-      <div class="menu-btns">
-        <button id="playBtn" class="btn big go">PLAY</button>
-        <button id="shopBtn" class="btn">THE SHED</button>
-        <button id="howBtn" class="btn">HOW TO PLAY</button>
-        <button id="muteBtn" class="btn icon" aria-label="Toggle sound">🔊</button>
+      <div class="menu-btns title-btns">
+        <button id="playBtn" class="btn big go" data-autofocus>PLAY</button>
+        <div class="row">
+          <button id="shopBtn" class="btn">THE SHED</button>
+          <button id="trophyBtn" class="btn">TROPHIES <span id="trophyPill" class="count"></span></button>
+          <button id="howBtn" class="btn">HOW TO PLAY</button>
+        </div>
+        <div class="row">
+          <button id="settingsBtn" class="btn icon" aria-label="Settings" title="Settings">⚙️</button>
+          <button id="muteBtn" class="btn icon" aria-label="Toggle sound" title="Sound">🔊</button>
+          <button id="fsBtn" class="btn icon" aria-label="Fullscreen" title="Fullscreen" hidden>⛶</button>
+        </div>
       </div>
       <p id="bestLine" class="best"></p>
+      <p class="foot">
+        <span id="verLine"></span>
+        <a href="https://github.com/JohanLyn/onemillionrabbits/issues" target="_blank" rel="noopener">Send feedback</a>
+        <button id="creditsBtn" class="link">Credits</button>
+        <button id="installBtn" class="link" hidden>Install app</button>
+      </p>
     </div>
   </div>
 
@@ -100,9 +128,70 @@
     </div>
   </div>
 
+  <div id="trophies" class="screen" hidden>
+    <div class="panel wide">
+      <h2>TROPHIES</h2>
+      <p class="sub"><b id="trophyCount">0 / 0</b> unlocked. Every trophy pays out golden carrots.</p>
+      <div id="trophyList" class="trophies"></div>
+      <h3>Lifetime</h3>
+      <div id="lifeStats" class="stats life"></div>
+      <button class="btn back" data-back>BACK</button>
+    </div>
+  </div>
+
+  <div id="settings" class="screen" hidden>
+    <div class="panel settings">
+      <h2>SETTINGS</h2>
+      <section class="set-group">
+        <h3>Sound</h3>
+        <label class="set-row"><span>Music</span><input id="setMusic" type="range" min="0" max="100" step="5"><output id="setMusicOut"></output></label>
+        <label class="set-row"><span>Effects</span><input id="setSfx" type="range" min="0" max="100" step="5"><output id="setSfxOut"></output></label>
+        <div class="set-row"><span>Sound on</span><button id="setMute" class="switch" role="switch" aria-label="Sound on"></button></div>
+      </section>
+      <section class="set-group">
+        <h3>Game</h3>
+        <div class="set-row"><span>Screen shake</span><button id="setShake" class="switch" role="switch" aria-label="Screen shake"></button></div>
+        <div class="set-row"><span>Damage numbers</span><button id="setNumbers" class="switch" role="switch" aria-label="Damage numbers"></button></div>
+        <div id="hapticsRow" class="set-row"><span>Vibrate when hit</span><button id="setHaptics" class="switch" role="switch" aria-label="Vibrate when hit"></button></div>
+        <div class="set-row"><span>Tips</span><button id="replayTips" class="link">show them again</button><button id="setTips" class="switch" role="switch" aria-label="Tips"></button></div>
+        <div id="fsRow" class="set-row"><span>Fullscreen</span><button id="setFs" class="switch" role="switch" aria-label="Fullscreen"></button></div>
+        <div class="set-row"><span>Graphics</span>
+          <div id="setQuality" class="seg" role="radiogroup" aria-label="Graphics quality">
+            <button data-q="auto" role="radio">AUTO</button><button data-q="low" role="radio">FAST</button><button data-q="high" role="radio">PRETTY</button>
+          </div>
+        </div>
+        <p id="qualityNote" class="note" hidden>Applies next launch. <button id="reloadBtn" class="link">Restart now</button></p>
+      </section>
+      <section class="set-group danger">
+        <h3>Danger zone</h3>
+        <div class="set-row"><span class="small">Wipes golden carrots, unlocks, trophies and best runs. Settings stay.</span><button id="resetBtn" class="btn small red">RESET</button></div>
+      </section>
+      <button id="settingsBack" class="btn back">BACK</button>
+    </div>
+  </div>
+
+  <div id="credits" class="screen" hidden>
+    <div class="panel">
+      <h2>CREDITS</h2>
+      <div class="credits">
+        <div><b>Made by</b><span>JohanLyn, with a lot of help from the rabbits</span></div>
+        <div><b>Inspired by</b><span>Survive a Million Monkeys (Roblox) and Vampire Survivors</span></div>
+        <div><b>Built with</b><span>three.js, Vite and WebAudio. Every model and sound is made in code.</span></div>
+        <div><b>Fonts</b><span>Lilita One and Nunito, from Google Fonts</span></div>
+        <div><b>Rabbits harmed</b><span>Zero. They respawn. That's the problem.</span></div>
+      </div>
+      <p class="sub small">This is a beta. Found a bug, or have an idea? Tell us.</p>
+      <div class="menu-btns">
+        <a class="btn go" href="https://github.com/JohanLyn/onemillionrabbits/issues" target="_blank" rel="noopener">SEND FEEDBACK</a>
+        <button class="btn" data-back>BACK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="levelup" class="screen dim" hidden>
     <div class="lu">
       <h2 id="luTitle" class="pop">LEVEL UP!</h2>
+      <p id="luTip" class="coach-line" hidden></p>
       <div id="cards" class="cards"></div>
       <button id="rerollBtn" class="btn small">🎲 REROLL (<span id="rerolls">0</span>)</button>
     </div>
@@ -113,6 +202,7 @@
       <h2 class="pop">WHEEL OF CHAOS</h2>
       <div class="wheel-box"><canvas id="wheelCanvas" width="360" height="360"></canvas><div class="pointer"></div></div>
       <div id="wheelResult" class="wheel-result"></div>
+      <p id="wheelTip" class="coach-line" hidden></p>
       <p class="hint">tap to skip</p>
     </div>
   </div>
@@ -122,7 +212,8 @@
       <h2>PAUSED</h2>
       <div id="pauseBuild" class="build"></div>
       <div class="menu-btns">
-        <button id="resumeBtn" class="btn big go">RESUME</button>
+        <button id="resumeBtn" class="btn big go" data-autofocus>RESUME</button>
+        <button id="pauseSettings" class="btn">SETTINGS</button>
         <button id="pauseMute" class="btn">SOUND: ON</button>
         <button id="quitBtn" class="btn">GIVE UP</button>
       </div>
@@ -134,15 +225,47 @@
       <h2 id="goTitle">YOU GOT BUNNIED</h2>
       <p id="goSub" class="sub"></p>
       <div id="goStats" class="stats"></div>
+      <div id="goExtra" class="extras"></div>
       <div id="goWeapons" class="dmgtable"></div>
       <div class="gold-pill big">+ <b id="goGold">0</b> 🥕 golden carrots</div>
+      <p id="goBreak" class="breakdown"></p>
       <div class="menu-btns">
-        <button id="retryBtn" class="btn big go">AGAIN!</button>
+        <button id="retryBtn" class="btn big go" data-autofocus>AGAIN!</button>
         <button id="menuBtn" class="btn">MENU</button>
       </div>
     </div>
   </div>
 
+  <div id="victory" class="screen dim" hidden>
+    <div id="confetti" class="confetti" aria-hidden="true"></div>
+    <div class="panel victory">
+      <div class="cup">🏆</div>
+      <h2>THE MEADOW IS SAFE!</h2>
+      <p id="vSub" class="sub"></p>
+      <div id="vStats" class="stats"></div>
+      <div id="vExtra" class="extras"></div>
+      <div class="gold-pill big">+ <b id="vGold">0</b> 🥕 golden carrots</div>
+      <p id="vBreak" class="breakdown"></p>
+      <div class="menu-btns">
+        <button id="vRetry" class="btn big go" data-autofocus>AGAIN!</button>
+        <button id="vMenu" class="btn">MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirm" class="screen dim" role="dialog" aria-modal="true" aria-labelledby="cfTitle" hidden>
+    <div class="panel confirm">
+      <div id="cfEm" class="cf-em">🐇</div>
+      <h2 id="cfTitle">Sure?</h2>
+      <p id="cfText" class="sub"></p>
+      <div class="menu-btns">
+        <button id="cfNo" class="btn go">NO</button>
+        <button id="cfYes" class="btn red">YES</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="menuToasts" aria-live="polite"></div>
   <div id="loading" class="screen"><div class="loader">🐇</div></div>
 </div>
 <script type="module" src="./src/main.js"></script>
