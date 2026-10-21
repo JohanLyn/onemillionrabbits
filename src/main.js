@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { G, rand, pick } from './core.js';
 import { initCamera, resizeCamera, updateCamera } from './camera.js';
 import { initWorld, updateWorld } from './world.js';
-import { initFx, updateFx, clearFx, banner, burst, ring } from './fx.js';
+import { initFx, updateFx, clearFx, banner, burst, ring, levelUpFx } from './fx.js';
 import { initEnemies, clearEnemies, updateEnemies, drawEnemies, drawPlayerShadow, director, hordeEvent, spawnBoss, spawnEnemy, queryCircle, damage, E } from './enemies.js';
 import { initPickups, clearPickups, updatePickups, drawPickups } from './pickups.js';
 import { initWeapons, clearWeapons, updateWeapons, drawWeapons, addWeapon, fireUltimate } from './weapons.js';
@@ -286,7 +286,7 @@ function choose(o) {
   applyOption(o);
   G.pendingLevels--;
   const p = G.player;
-  burst(p.x, 1.4, p.z, 14, [0x59d9ff, 0xffffff, 0xffc83d], 5, 0.3, 0.7, 6);
+  levelUpFx(p.x, p.z);
   UI.renderLoadout();
   if (G.pendingLevels > 0) openLevelUp();
   else {
