@@ -5,7 +5,7 @@ import { toastGeo, chickenGeo, beeGeo, slipperGeo, bananaGeo, sabreHiltGeo, plun
 import { gnomeGeo, acornGeo, kazooGeo, noodleGeo, cartGeo } from './models-extra.js';
 import { queryCircle, nearest, randomNear, nearestGrabbable, damage } from './enemies.js';
 import { blocked } from './world.js';
-import { burst, particle, explosion, ring, telegraph, beam, lightning, floater, banner } from './fx.js';
+import { burst, particle, poof, explosion, ring, telegraph, beam, lightning, floater, banner } from './fx.js';
 import { sfx } from './audio.js';
 
 // ======================================================================

@@ -45,7 +45,7 @@ export function computeStats() {
     amount: 0,
     speed: c.speed * (1 + 0.04 * u('spd')),
     magnet: 1 + (c.mods.magnet || 0) + 0.1 * u('mag'),
-    regen: 0,
+    regen: c.mods.regen || 0,
     armor: 0,
     crit: 0.05 + 0.02 * u('luck'),
     luck: 1 + 0.1 * u('luck'),

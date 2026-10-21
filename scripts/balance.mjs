@@ -308,6 +308,7 @@ async function makeContext(char) {
 const jobs = [];
 for (const c of chars) for (let i = 0; i < runs; i++) jobs.push(c);
 const results = [];
+const crashes = [];
 let next = 0;
 async function worker() {
   while (next < jobs.length) {
@@ -319,7 +320,13 @@ async function worker() {
       try {
         r = await playRun(ctx, char);
       } catch (err) {
-        console.log(`(${char}: retrying after ${err.message.split('\n')[0]})`);
+        const msg = err.message.split('\n')[0];
+        // only a slow page load is worth a retry; anything else is a real bug and gets reported
+        if (!/Timeout/.test(msg)) {
+          console.log(`${char}: RUN CRASHED: ${msg}`);
+          crashes.push(`${char}: ${msg}`);
+          attempt = 3;
+        } else console.log(`(${char}: retrying after ${msg})`);
       }
       await ctx.close();
     }
@@ -369,6 +376,7 @@ for (const r of results) if (!r.victory) for (const k of (r.killer || '').split(
   taken[c] = (taken[c] || 0) + Number(v);
 }
 console.log('\nwhat hurt runs in their last 12s: ' + Object.entries(taken).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', '));
-const errs = results.flatMap((r) => r.errors);
+const errs = results.flatMap((r) => r.errors).concat(crashes);
 if (errs.length) console.log('\npage errors:\n' + [...new Set(errs)].join('\n'));
 if (jsonOut) writeFileSync(jsonOut, JSON.stringify(results, null, 1));
+if (errs.length) process.exitCode = 1;

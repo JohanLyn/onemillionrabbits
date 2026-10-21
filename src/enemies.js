@@ -18,7 +18,7 @@ export const TYPES = {
   bomb: { hp: 14, speed: 4.3, dmg: 22, xp: 2, scale: 1, fur: 0x5b5566 },
   golden: { hp: 30, speed: 5.6, dmg: 0, xp: 25, scale: 1, fur: 0xffcc33 },
   archer: { hp: 20, speed: 2.7, dmg: 6, shot: 12, xp: 3, scale: 1, fur: 0xd9b77e, geo: archerGeo },
-  burrower: { hp: 28, speed: 3.1, dmg: 8, shot: 20, xp: 3, scale: 1, fur: 0x8c6f56, geo: burrowerGeo },
+  burrower: { hp: 28, speed: 3.1, dmg: 8, shot: 15, xp: 3, scale: 1, fur: 0x8c6f56, geo: burrowerGeo },
   egg: { hp: 40, speed: 0, dmg: 0, xp: 1, scale: 1.1, fur: 0xfff1f8, geo: eggGeo },
 };
 const KINDS = Object.keys(TYPES);
@@ -164,10 +164,12 @@ export function clearEnemies() {
 
 export function difficulty() {
   const w = G.wave - 1;
+  // the back half of the run ramps on top of the curve, so a snowballing build still has to sweat
+  const late = Math.max(0, w - 14);
   return {
-    hp: 1 + w * 0.3 + w * w * 0.07,
+    hp: (1 + w * 0.3 + w * w * 0.088) * (1 + late * late * 0.012),
     // the first waves bite gently while you find your feet; it gets mean after that
-    dmg: (w < 3 ? 0.75 + w * 0.08 : 1) + w * 0.15,
+    dmg: (w < 3 ? 0.75 + w * 0.08 : 1) + w * 0.165 + late * 0.12,
     speed: 1 + Math.min(0.42, w * 0.02),
   };
 }
@@ -182,6 +184,8 @@ export function spawnEnemy(type, x, z, opts = {}) {
   const giant = G.mod?.id === 'giant' ? 1.55 : 1;
   const baby = !!opts.baby;
   const elite = !!opts.elite;
+  // phones get a smaller crowd, so each rabbit there is a bit beefier (and worth a bit more)
+  const dense = G.lowPower && G.state !== 'menu' ? 1.3 : 1;
   e.id = nextId++;
   e.type = type;
   e.T = T;
@@ -190,12 +194,12 @@ export function spawnEnemy(type, x, z, opts = {}) {
   e.y = 0;
   e.vy = 0;
   e.kx = e.kz = 0;
-  e.maxHp = T.hp * d.hp * (giant > 1 ? 2 : 1) * (elite ? 12 : 1);
+  e.maxHp = T.hp * d.hp * (giant > 1 ? 2 : 1) * (elite ? 12 : 1) * dense;
   e.hp = baby ? e.maxHp * 0.3 : e.maxHp;
   e.speed = T.speed * d.speed * rand(0.9, 1.1) * (elite ? 0.9 : 1);
   e.dmg = T.dmg * d.dmg * (elite ? 1.5 : 1);
   e.shot = (T.shot || 0) * d.dmg;
-  e.xp = T.xp * (giant > 1 ? 2 : 1) * (elite ? 10 : 1);
+  e.xp = T.xp * (giant > 1 ? 2 : 1) * (elite ? 10 : 1) * dense;
   e.size = T.scale * giant * (elite ? 1.4 : 1);
   e.grow = baby ? 14 : 0;
   e.scale = baby ? e.size * 0.5 : e.size;
@@ -282,7 +286,7 @@ export function director(dt) {
   const w = G.wave;
   ultBudget = Math.min(ultBudget + (dt * G.stats.ultCost) / 40, G.stats.ultCost);
   // archers share a fire budget so a big crowd of them stays a hazard, not a bullet hell
-  volley = Math.min(volley + dt * Math.min(1.6, 0.7 + w * 0.03), 2);
+  volley = Math.min(volley + dt * Math.min(1.3, 0.6 + w * 0.025), 2);
   const raid = G.mod?.id === 'slowmo' ? 2 : 1;
   const target = hordeTarget();
   const rate = Math.min(40, 4 + w * 2) * raid * (E.length < target ? 1 : 0.15);
@@ -298,7 +302,7 @@ export function director(dt) {
   // elite rabbits: rare, glowing, tanky, and worth a present
   if (w >= 6) {
     eliteAcc += dt;
-    const every = Math.max(11, 30 - w * 0.75);
+    const every = Math.max(8, 28 - w * 0.8);
     if (eliteAcc > every) {
       eliteAcc = rand(-3, 3);
       let t = chooseType();
@@ -990,7 +994,7 @@ const BOSSES = {
     names: ['THE RABBIT QUEEN'],
     sub: 'the mother of all one million rabbits',
     geo: queenGeo,
-    hp: 1.35, scale: 4.3, r: 2.9, speed: 2.4,
+    hp: 1.7, scale: 4.3, r: 2.9, speed: 2.4,
     phases: [0.66, 0.33],
     attacks: [['leap', 'volley', 'leap'], ['spiral', 'lay', 'leap', 'volley'], ['leap2', 'spiral3', 'charge', 'fan', 'lay']],
     rest: [[2.8, 3.6], [2.2, 3], [1.4, 2.2]],
@@ -1206,8 +1210,8 @@ function updateBoss(dt) {
   }
   const sp = K.speed * difficulty().speed * (1 + b.ph * 0.15);
   if (b.state === 'walk') {
-    // spinners like to keep their distance; everyone else wants a hug
-    const dir = K.keep ? (d > K.keep + 2 ? 1 : d < K.keep - 2 ? -0.6 : 0.15) : 1;
+    // spinners hang back to shoot (but never run away from melee builds); everyone else wants a hug
+    const dir = K.keep ? (d > K.keep + 2 ? 1 : 0.15) : 1;
     b.x += (dx * sp * dir + b.kx) * dt;
     b.z += (dz * sp * dir + b.kz) * dt;
     b.phase += dt * 4;
