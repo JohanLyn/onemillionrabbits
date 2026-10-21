@@ -14,6 +14,7 @@ const defaults = () => ({
   ach: {}, // achievement id -> unlock time
   tips: {}, // tutorial tip id -> true once shown
   tipsOff: false,
+  difficulty: 'normal',
   life: { kills: 0, bosses: 0, goldens: 0, fusions: [], mods: [] }, // lifetime tallies for achievements
   settings: defaultSettings(),
 });

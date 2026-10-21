@@ -1,7 +1,7 @@
 // Offline support: keeps a copy of the game so an installed beta still runs on a plane.
 // The game page is fetched network-first (testers always get the newest build when online),
 // everything else cache-first. scripts/postbuild.js stamps BUILD with a hash of the build.
-const BUILD = '40574a99a5';
+const BUILD = 'e21a2ca8ed';
 const CACHE = 'omr-' + BUILD;
 const CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 const FONTS = /^https:\/\/fonts\.(googleapis|gstatic)\.com\//;

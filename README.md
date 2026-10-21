@@ -4,7 +4,7 @@ A cel-shaded horde-survival game for the browser, inspired by the Roblox game **
 
 You're alone in a meadow. One million rabbits want you gone. Your weapons are a toaster, a lightsabre, a rubber chicken and a jar of angry bees. Good luck.
 
-Runs on a laptop (keyboard) and on a phone (touch joystick). It's built with [three.js](https://threejs.org) and compiles to **one self-contained HTML file**.
+Runs in the browser on laptops (keyboard), phones and tablets (touch joystick): iPhone, iPad and Android. It's built with [three.js](https://threejs.org) and compiles to **one self-contained HTML file**.
 
 > **This is the 0.9.0 beta.** Thanks for testing! Found a bug, or have an idea? [Open an issue](https://github.com/JohanLyn/onemillionrabbits/issues). There's also a **Send feedback** link on the title screen. What's new is in [CHANGELOG.md](CHANGELOG.md).
 
@@ -14,7 +14,7 @@ Runs on a laptop (keyboard) and on a phone (touch joystick). It's built with [th
 
 **👉 https://johanlyn.github.io/onemillionrabbits/**
 
-Works in any recent browser on a laptop or a phone. Your progress (golden carrots, survivors, trophies, settings) is saved in that browser.
+Works in any recent browser on a laptop, phone or tablet: Safari on iPhone and iPad (iOS/iPadOS 15 or newer), Chrome and Firefox on Android, and any desktop browser. Nothing to install. Your progress (golden carrots, survivors, trophies, settings) is saved in that browser.
 
 ### Install it on your phone
 
@@ -25,7 +25,7 @@ Installed, it opens fullscreen like an app and **works offline**.
 | **Android (Chrome)** | Open the link, then tap **Install app** under the title screen (or **⋮ → Add to Home screen**). |
 | **iPhone / iPad (Safari)** | Open the link, tap **Share** (the square with the arrow), then **Add to Home Screen**. |
 
-Tips for phones: the game plays in portrait and landscape. On Android, the **⛶** button on the title screen goes fullscreen. If it stutters, set **Settings → Graphics → FAST** and restart.
+Tips for phones and tablets: the game plays in portrait and landscape. On Android and iPad, the **⛶** button on the title screen goes fullscreen (iPhones don't allow that for web pages; adding the game to the home screen gives you the full screen instead). If it stutters, set **Settings → Graphics → FAST** and restart.
 
 ### Other ways to play
 
@@ -60,9 +60,19 @@ From the title screen (⚙️) or the pause menu:
 - **Graphics**: **AUTO** picks for your device, **FAST** for older phones, **PRETTY** for sharp rendering. Takes effect after a restart.
 - **Reset progress** wipes carrots, survivors, Shed upgrades, trophies and best runs (settings stay). It asks first.
 
+### Difficulty
+
+Pick a level under the survivors on the title screen. The first few waves play the same on all three; the difference grows from wave 7 on.
+
+| Level | What changes |
+|---|---|
+| 🐰 **Fluffy** | Softer, slower rabbits, more healing, faster levelling. 25% fewer golden carrots. |
+| 🥕 **Normal** | The intended challenge. |
+| 🔥 **Rabid** | Much tougher, meaner, faster and bigger hordes, little healing, slower levelling. **+60% golden carrots**, and a trophy for winning. |
+
 ### Trophies
 
-21 trophies, each worth golden carrots: beat a boss, cook a fusion, catch a golden bunny, let 500 babies be born (oops), win with every survivor... Pop-ups appear mid-run, and the **TROPHIES** screen shows your shelf, progress bars and lifetime stats.
+22 trophies, each worth golden carrots: beat a boss, cook a fusion, catch a golden bunny, let 500 babies be born (oops), win on Rabid, win with every survivor... Pop-ups appear mid-run, and the **TROPHIES** screen shows your shelf, progress bars and lifetime stats.
 
 ### Winning
 
@@ -207,8 +217,8 @@ Progress (golden carrots, unlocks, trophies, best runs, settings) is saved in yo
 | `npm run build` | Builds `dist/` (one `index.html` plus the PWA files) and copies it to `docs/` |
 | `npm test` | Build, then the headless smoke test on a laptop and a phone viewport |
 | `npm run smoke -- [--mobile] [--seconds 180] [--out shots]` | Fast-forwards a full run in headless Chromium and fails on any page error |
-| `npm run screens -- [--only 390x844]` | Screenshots every menu at 1280×760, 390×844, 844×390 and 360×640 into `shots/screens/` |
-| `npm run balance -- [--runs 3] [--chars gardener] [--shed none\|mid\|max] [--mobile]` | A bot plays real runs (no cheats) and reports how far each survivor gets and which weapons do the damage |
+| `npm run screens -- [--only 390x844]` | Screenshots every menu at laptop, phone and tablet sizes (iPhone, iPad, iPad Pro, Android tablet, portrait and landscape) into `shots/screens/` |
+| `npm run balance -- [--runs 3] [--chars gardener] [--shed none\|mid\|max] [--difficulty fluffy\|normal\|rabid] [--mobile]` | A bot plays real runs (no cheats) and reports how far each survivor gets and which weapons do the damage |
 | `npm run icons` | Re-renders the PNG app icons from `public/icons/icon.svg` |
 
 The smoke tests drive the game through `window.__omr` (`startRun`, `advance(seconds)`, `give(id, level)`, `levelUp`, `ult`, `win`, `G`, `E`, `save`), because headless Chromium only renders a few frames per second.

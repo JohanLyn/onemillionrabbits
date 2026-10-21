@@ -29,13 +29,15 @@ body {
   color: var(--ink);
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none; /* no long-press magnifier or "save image" sheet on iPhone and iPad */
+  -webkit-text-size-adjust: 100%;
   touch-action: none;
   overscroll-behavior: none;
 }
 #app { position: fixed; inset: 0; overflow: hidden; background: var(--sky); }
 #c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 
-button { font-family: var(--display); color: var(--ink); cursor: pointer; }
+button { font-family: var(--display); color: var(--ink); cursor: pointer; touch-action: manipulation; }
 button:focus-visible, a:focus-visible, input:focus-visible { outline: 4px solid var(--carrot); outline-offset: 3px; }
 /* keyboard players always see where they are, even after a programmatic focus */
 .kbd button:focus, .kbd a:focus, .kbd input:focus { outline: 4px solid var(--carrot); outline-offset: 3px; }
@@ -51,7 +53,7 @@ a { color: inherit; }
   box-shadow: 0 5px 0 var(--ink);
   transition: transform 0.08s, box-shadow 0.08s;
 }
-.btn:hover { transform: translateY(-2px); box-shadow: 0 7px 0 var(--ink); }
+@media (hover: hover) { .btn:hover { transform: translateY(-2px); box-shadow: 0 7px 0 var(--ink); } }
 .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
 .btn.big { font-size: 26px; padding: 12px 34px; }
 .btn.small { font-size: 15px; padding: 7px 14px; }
@@ -129,6 +131,15 @@ a.btn { display: inline-block; text-decoration: none; font-family: var(--display
 .char .nm { font-family: var(--display); font-size: 17px; }
 .char .ds { font-size: 12px; font-weight: 800; color: var(--muted); line-height: 1.25; }
 .char .wp { font-size: 12px; font-weight: 900; color: var(--carrot-dark); }
+.diffs { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
+.diff {
+  font-family: var(--body); font-weight: 900; font-size: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); padding: 5px 14px; min-width: 104px;
+}
+.diff b { font-family: var(--display); font-weight: 400; font-size: 17px; }
+.diff small { font-size: 11px; font-weight: 800; color: var(--muted); }
+.diff.sel { background: #fff2c2; outline: 4px solid var(--carrot); }
+.diff.sel.rabid { background: #ffd9d0; outline-color: #e8452c; }
 .char.sel { background: #fff2c2; outline: 4px solid var(--carrot); outline-offset: 0; transform: translateY(-3px); }
 .char.locked { background: #e6e0ec; }
 .char.locked .em { filter: grayscale(1) brightness(0.6); }
@@ -265,7 +276,7 @@ a.btn { display: inline-block; text-decoration: none; font-family: var(--display
 .card:nth-child(3) { animation-delay: 0.12s; }
 .card:nth-child(4) { animation-delay: 0.18s; }
 @keyframes cardIn { from { transform: translateY(60px) scale(0.8); opacity: 0; } }
-.card:hover { transform: translateY(-4px) rotate(-1deg); }
+@media (hover: hover) { .card:hover { transform: translateY(-4px) rotate(-1deg); } }
 .card .em { font-size: 48px; line-height: 1.1; }
 .card .nm { font-family: var(--display); font-size: 21px; line-height: 1.05; }
 .card .lv { font-family: var(--display); font-size: 13px; background: var(--ink); color: #fff; border-radius: 999px; padding: 2px 10px; }
@@ -465,6 +476,12 @@ input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border-radius
 
 /* ---------- phones ---------- */
 @media (max-width: 720px) {
+  /* one compact row on phones; the selected level still explains itself */
+  .diffs { flex-wrap: nowrap; gap: 6px; width: 100%; }
+  .diff { flex: 1; min-width: 0; padding: 4px 6px; }
+  .diff b { font-size: 15px; }
+  .diff:not(.sel) small { display: none; }
+  .diff small { font-size: 10px; line-height: 1.15; }
   .chars { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .cards { grid-template-columns: 1fr; gap: 10px; }
   .card { flex-direction: row; text-align: left; padding: 10px 12px; gap: 10px; }
@@ -520,14 +537,21 @@ input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border-radius
   .btn.big { font-size: 22px; padding: 10px 26px; }
   .menu-inner { gap: 4px; }
   .section-h { margin-top: 2px; font-size: 18px; }
-  #toasts { width: min(400px, calc(100% - 300px)); }
+  /* on short landscape phones the middle of the screen is where you are, so tips sit at the left */
+  #toasts { position: absolute; left: max(10px, var(--sl)); top: calc(140px + var(--st)); width: min(300px, 36vw); align-items: stretch; }
+  .coach { padding: 6px 10px; }
+  .coach-em { font-size: 22px; }
+  .coach p { font-size: 13px; }
+  .toast { padding: 4px 10px; }
+  .toast .em { font-size: 22px; }
+  .toast b { font-size: 15px; }
   .beta { right: -66px; bottom: 10px; font-size: 14px; }
   .char { padding: 6px; }
   .char .em { font-size: 26px; }
   .char .nm { font-size: 15px; }
   .wheel-wrap { gap: 2px; }
   .wheel-wrap h2 { font-size: 30px; }
-  .wheel-box { width: min(240px, calc(100vh - 150px)); }
+  .wheel-box { width: min(240px, calc(100vh - 150px)); width: min(240px, calc(100dvh - 150px)); }
   .wheel-result { font-size: 22px; min-height: 0; }
   .wheel-result small { font-size: 13px; }
   .panel { padding: 14px 18px; }

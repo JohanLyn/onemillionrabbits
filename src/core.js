@@ -37,6 +37,20 @@ export const G = {
   settings: null, // the player's settings (see save.js), shared object
 };
 
+// Difficulty levels. The rabbit multipliers ramp in over the first six waves (see diffK), so the
+// opening is the same on every level and only the middle and late game change.
+export const DIFFICULTIES = {
+  fluffy: { name: 'Fluffy', emoji: '🐰', desc: 'A gentle stroll. Fewer carrots.', hp: 0.85, dmg: 0.8, speed: 0.95, horde: 0.9, xp: 1.1, heal: 1.4, gold: 0.75 },
+  normal: { name: 'Normal', emoji: '🥕', desc: 'The meadow as intended.', hp: 1.3, dmg: 1.25, speed: 1.07, horde: 1.2, xp: 0.9, heal: 0.7, gold: 1 },
+  rabid: { name: 'Rabid', emoji: '🔥', desc: 'Foaming at the mouth. +60% golden carrots.', hp: 1.85, dmg: 1.6, speed: 1.14, horde: 1.4, xp: 0.82, heal: 0.4, gold: 1.6 },
+};
+G.diffId = 'normal';
+G.diff = DIFFICULTIES.normal;
+export function diffK(key) {
+  const k = Math.min(1, Math.max(0, (G.wave - 1) / 6));
+  return 1 + (G.diff[key] - 1) * k;
+}
+
 export const WORLD = 105; // half-size of the playable meadow
 export const ULT_COST = 150; // kills to charge the Orbital Carrot Strike
 

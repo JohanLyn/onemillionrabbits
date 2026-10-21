@@ -1,5 +1,5 @@
-import { G, VERSION, fmt, fmtTime } from './core.js';
-import { save, upgradeLevel } from './save.js';
+import { G, VERSION, DIFFICULTIES, fmt, fmtTime } from './core.js';
+import { save, writeSave, upgradeLevel } from './save.js';
 import { CHARS } from './player.js';
 import { WEAPONS, FUSIONS, weaponInfo } from './weapons.js';
 import { PASSIVES, SHOP, shopCost, describe } from './upgrades.js';
@@ -41,6 +41,7 @@ export function renderMenu(onSelect) {
     b.onclick = () => onSelect(id);
     wrap.appendChild(b);
   }
+  renderDifficulty();
   // on phones the survivors scroll sideways: keep the picked one in view
   const sel = wrap.querySelector('.sel');
   if (sel && wrap.scrollWidth > wrap.clientWidth) wrap.scrollLeft = sel.offsetLeft - (wrap.clientWidth - sel.offsetWidth) / 2;
@@ -285,12 +286,33 @@ function extras(r) {
   return out.join('');
 }
 
+function renderDifficulty() {
+  const wrap = $('diffs');
+  wrap.innerHTML = '';
+  for (const id in DIFFICULTIES) {
+    const d = DIFFICULTIES[id];
+    const b = document.createElement('button');
+    const on = (save.difficulty || 'normal') === id;
+    b.className = `diff ${id}` + (on ? ' sel' : '');
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', String(on));
+    b.innerHTML = `<b>${d.emoji} ${d.name}</b><small>${d.desc}</small>`;
+    b.onclick = () => {
+      save.difficulty = id;
+      writeSave();
+      renderDifficulty();
+    };
+    wrap.appendChild(b);
+  }
+}
+
 function breakdown(b) {
   return [
     b.pickups && `${b.pickups} picked up`,
     b.kills && `${b.kills} for rabbits`,
     b.waves && `${b.waves} for waves`,
     b.victory && `${b.victory} victory bonus`,
+    b.difficulty && (b.difficulty > 0 ? `${b.difficulty} ${G.diff.name} bonus` : `${b.difficulty} for ${G.diff.name}`),
     b.trophies && `${b.trophies} from trophies`,
   ].filter(Boolean).join(' · ');
 }

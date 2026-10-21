@@ -1,5 +1,5 @@
 // Balance harness: a bot plays real runs (no invulnerability) and reports how far each survivor gets.
-//   npm run build && node scripts/balance.mjs [--runs 3] [--chars gardener,chef] [--shed none|mid|max]
+//   npm run build && node scripts/balance.mjs [--runs 3] [--chars gardener,chef] [--shed none|mid|max] [--difficulty fluffy|normal|rabid]
 //        [--mobile] [--workers 3] [--max-wave 31] [--json out.json] [--url file:///.../dist/index.html]
 // The bot steers with synthetic WASD key events between short __omr.advance() steps: every 0.25s it
 // tries 16 directions and keeps the one that stays furthest from rabbits, telegraphs and carrot darts,
@@ -19,6 +19,7 @@ const ALL = ['gardener', 'chef', 'dj', 'monk', 'grandma'];
 const runs = Number(arg('runs', 3));
 const chars = arg('chars', ALL.join(',')).split(',');
 const shed = arg('shed', 'none');
+const difficulty = arg('difficulty', 'normal');
 const mobile = process.argv.includes('--mobile');
 const workers = Number(arg('workers', 3));
 const maxWave = Number(arg('max-wave', 31));
@@ -296,7 +297,7 @@ async function makeContext(char) {
   const ctx = await browser.newContext(
     mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1280, height: 760 } }
   );
-  const save = { gold: 0, unlocked: ALL, char, upgrades: SHEDS[shed] || {}, muted: true, best: { kills: 0, wave: 0, time: 0 }, runs: 5 };
+  const save = { gold: 0, unlocked: ALL, char, upgrades: SHEDS[shed] || {}, difficulty, muted: true, best: { kills: 0, wave: 0, time: 0 }, runs: 5 };
   await ctx.addInitScript(([s, mob]) => {
     localStorage.setItem('one-million-rabbits-v1', JSON.stringify(s));
     // this sandbox reports 4 cores, which the game treats as a low-power device; desktop balance wants the desktop cap
@@ -344,7 +345,7 @@ const median = (a) => {
   const s = [...a].sort((x, y) => x - y);
   return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : 0;
 };
-console.log(`\n=== ${shed} shed, ${mobile ? 'mobile' : 'desktop'}, ${runs} run(s) per survivor ===`);
+console.log(`\n=== ${shed} shed, ${difficulty}, ${mobile ? 'mobile' : 'desktop'}, ${runs} run(s) per survivor ===`);
 console.log('survivor   waves (each run)          median wave  median time  victories');
 for (const c of chars) {
   const rs = results.filter((r) => r.char === c);

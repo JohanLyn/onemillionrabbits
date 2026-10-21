@@ -8,7 +8,7 @@ import { renderLoadout } from './ui.js';
 
 // ---------- in-run trinkets ----------
 export const PASSIVES = {
-  espresso: { name: 'Triple Espresso', emoji: '☕', desc: '+8% move speed', max: 5, apply: (s, l) => (s.speed += 0.08 * l) },
+  espresso: { name: 'Triple Espresso', emoji: '☕', desc: '+6% move speed', max: 5, apply: (s, l) => (s.speed += 0.06 * l) },
   cake: { name: 'Carrot Cake', emoji: '🎂', desc: '+20 max HP, slowly heal', max: 5, apply: (s, l) => { s.maxHp += 20 * l; s.regen += 0.3 * l; } },
   magnet: { name: 'Fridge Magnet', emoji: '🧲', desc: '+25% pickup range', max: 5, apply: (s, l) => (s.magnet += 0.25 * l) },
   hat: { name: 'Ridiculously Large Hat', emoji: '🎩', desc: '+10% area of everything', max: 5, apply: (s, l) => (s.area += 0.1 * l) },
@@ -54,6 +54,8 @@ export function computeStats() {
     ultCost: Math.round(ULT_COST * (1 - 0.15 * u('ult'))),
   };
   for (const p of G.passives) PASSIVES[p.id].apply(s, p.level);
+  s.xpGain *= G.diff.xp;
+  s.regen *= G.diff.heal;
   s.cooldown = Math.max(0.35, s.cooldown);
   s.armor = Math.min(0.6, s.armor);
   G.stats = s;

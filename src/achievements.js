@@ -32,6 +32,7 @@ export const ACHIEVEMENTS = [
   { id: 'shopper', emoji: '🛠️', name: 'Home Improvement', desc: 'Buy an upgrade in The Shed.', gold: 10, test: () => Object.keys(save.upgrades).length > 0 },
   { id: 'roster', emoji: '👥', name: 'Full Roster', desc: 'Unlock every survivor.', gold: 50, progress: () => [save.unlocked.length, Object.keys(CHARS).length] },
   { id: 'win', emoji: '🏆', name: 'One Million and Done', desc: 'Win a run.', gold: 200, test: () => save.victories >= 1 },
+  { id: 'rabid', emoji: '🔥', name: 'Foaming at the Mouth', desc: 'Win a run on Rabid.', gold: 300, test: () => (save.rabidWins || 0) >= 1 },
   { id: 'winall', emoji: '🌟', name: 'Every Survivor, Every Time', desc: 'Win with every survivor.', gold: 500, progress: () => [wins(), Object.keys(CHARS).length] },
 ];
 for (const a of ACHIEVEMENTS) if (a.progress) a.test = () => { const [n, of] = a.progress(); return n >= of; };

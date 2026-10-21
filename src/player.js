@@ -125,7 +125,7 @@ export class Player {
     let amt = dmg * (1 - G.stats.armor);
     if (G.mod?.id === 'glass') amt *= 2;
     this.hp -= amt;
-    this.invuln = big ? 0.8 : 0.45;
+    this.invuln = big ? 0.8 : 0.4;
     this.flash = 0.1;
     this.recoil = 1;
     G.shake = Math.max(G.shake, big ? 0.7 : 0.25);

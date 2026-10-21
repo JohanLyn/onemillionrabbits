@@ -7,7 +7,8 @@ The first public beta. Install it on your phone, play it offline, and [tell us w
 ### New
 
 - **You can win.** Beat the final boss on wave 30 for a victory screen, confetti and a big golden-carrot bonus (bigger the first time with each survivor). Wins are counted, and each survivor's card shows a 🏆.
-- **Trophies.** 21 of them, each worth golden carrots, with pop-ups mid-run and a trophy shelf with progress bars and lifetime stats.
+- **Difficulty levels.** 🐰 Fluffy, 🥕 Normal and 🔥 Rabid (+60% golden carrots), picked on the title screen. Normal is now harder than before in the middle and late game: tougher, faster and bigger hordes, harder-hitting rabbits and bosses, less free healing and slower levelling.
+- **Trophies.** 22 of them, each worth golden carrots, with pop-ups mid-run and a trophy shelf with progress bars and lifetime stats.
 - **First-run tips.** Short, skippable coaching the first time each thing happens: moving, auto-fire, carrots, your first level-up, the counter going *up* from breeding, the Wheel of Chaos, bosses, golden bunnies, fusions and the Carrot Strike.
 - **Settings.** Music and effects volume, sound on/off, screen shake, damage numbers, vibrate when hit, tips, fullscreen, graphics quality (AUTO / FAST / PRETTY) and reset progress. Open them from the title screen or the pause menu.
 - **Install it.** The game is a PWA: add it to your home screen and it opens fullscreen and works offline.
@@ -42,7 +43,9 @@ The first public beta. Install it on your phone, play it offline, and [tell us w
 - An adaptive soundtrack: menu theme, a full in-run song that builds with the waves, a boss march, a disco variant, stingers for waves, bosses, defeat and victory, and a heartbeat when you're low on health.
 - Every sound effect has variants (yes, rabbits occasionally go "eep!"), plus a new kazoo honk and burrower digging. A voice limiter keeps 500 rabbit pops from clipping.
 
+- **Phones and tablets**: works on older iPhones and iPads (iOS 15 and up; before, iOS 15 and 16 showed a blank page), no long-press magnifier on iOS, no stuck hover effects after a tap, iPads are recognised as touch devices, and tips move to the side on landscape phones so they don't cover your survivor.
+
 ### Behind the scenes
 
 - GitHub Actions: CI builds and runs headless smoke tests (laptop and phone) on every push; pushes to `main` deploy to GitHub Pages.
-- `npm test`, `npm run screens` (screenshots of every menu at four sizes) and `npm run icons`.
+- `npm test`, `npm run screens` (screenshots of every menu at nine laptop, phone and tablet sizes), `npm run balance -- --difficulty rabid` and `npm run icons`.

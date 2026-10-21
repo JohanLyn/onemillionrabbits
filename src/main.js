@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { G, rand, pick } from './core.js';
+import { G, DIFFICULTIES, rand, pick } from './core.js';
 import { initCamera, resizeCamera, updateCamera } from './camera.js';
 import { initWorld, updateWorld } from './world.js';
 import { initFx, updateFx, clearFx, banner, burst, ring, levelUpFx } from './fx.js';
@@ -36,7 +36,8 @@ const QUIPS = [
 const canvas = document.getElementById('c');
 loadSave();
 G.settings = save.settings;
-G.touch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+// iPads report a desktop browser, so look at touch support rather than the device name
+G.touch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 // quality is read once at boot: every system sizes its buffers from G.lowPower when it initializes
 const quality = (G.bootQuality = save.settings.quality);
 G.lowPower = quality === 'low' || (quality === 'auto' && (G.touch || (navigator.hardwareConcurrency || 8) <= 4));
@@ -225,6 +226,8 @@ function startRun() {
   if (!save.unlocked.includes(save.char)) save.char = 'gardener';
   const c = CHARS[save.char];
   G.player.reset(save.char);
+  G.diffId = DIFFICULTIES[save.difficulty] ? save.difficulty : 'normal';
+  G.diff = DIFFICULTIES[G.diffId];
   addWeapon(c.weapon);
   computeStats();
   G.rerolls = 1 + upgradeLevel('reroll') + (c.mods.rerolls || 0);
@@ -238,7 +241,7 @@ function startRun() {
   UI.renderLoadout();
   UI.hud(true);
   UI.show();
-  banner('WAVE 1', 'survive the horde');
+  banner('WAVE 1', G.diffId === 'normal' ? 'survive the horde' : `${G.diff.emoji} ${G.diff.name} · survive the horde`);
   G.time = 0;
   tip('move');
   tip('auto');
@@ -379,8 +382,11 @@ function gameOver() {
     breakdown.victory = VICTORY_BONUS + (save.winsBy[c] ? 0 : FIRST_WIN_BONUS);
     save.victories = (save.victories || 0) + 1;
     save.winsBy[c] = (save.winsBy[c] || 0) + 1;
+    if (G.diffId === 'rabid') save.rabidWins = (save.rabidWins || 0) + 1;
   }
-  const gold = breakdown.pickups + breakdown.kills + breakdown.waves + (breakdown.victory || 0);
+  const base = breakdown.pickups + breakdown.kills + breakdown.waves + (breakdown.victory || 0);
+  breakdown.difficulty = Math.round(base * (G.diff.gold - 1));
+  const gold = base + breakdown.difficulty;
   save.gold += gold;
   // a record only counts once there is an earlier run to beat
   const b = save.best;

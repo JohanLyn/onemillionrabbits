@@ -1,4 +1,4 @@
-// Screenshot tour: visits every menu and overlay at laptop and phone sizes, for eyeballing layout.
+// Screenshot tour: visits every menu and overlay at laptop, phone and tablet sizes, for eyeballing layout.
 //   npm run build && node scripts/screens.mjs [--out shots/screens] [--only 390x844] [--url ...]
 // Fails on page errors, like the smoke test.
 import { chromium } from 'playwright';
@@ -20,6 +20,13 @@ const SIZES = [
   { name: '390x844', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
   { name: '844x390', viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true },
   { name: '360x640', viewport: { width: 360, height: 640 }, isMobile: true, hasTouch: true },
+  // tablets: iPad (portrait and landscape), the big iPad Pro, and a typical Android tablet
+  { name: '820x1180', viewport: { width: 820, height: 1180 }, isMobile: true, hasTouch: true },
+  { name: '1180x820', viewport: { width: 1180, height: 820 }, isMobile: true, hasTouch: true },
+  { name: '1024x1366', viewport: { width: 1024, height: 1366 }, isMobile: true, hasTouch: true },
+  { name: '800x1280', viewport: { width: 800, height: 1280 }, isMobile: true, hasTouch: true },
+  // a big phone in landscape (iPhone Pro Max size)
+  { name: '932x430', viewport: { width: 932, height: 430 }, isMobile: true, hasTouch: true },
 ].filter((s) => !only || s.name === only);
 
 const exe = '/opt/pw-browsers/chromium';

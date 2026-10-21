@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { G, WORLD, dummy, rand, pick, clamp, fmt } from './core.js';
+import { G, WORLD, dummy, rand, pick, clamp, fmt, diffK } from './core.js';
 import { Inst, vtoon, outlined } from './toon.js';
 import { rabbitGeo, hatGeo } from './models.js';
 import { archerGeo, burrowerGeo, moundGeo, eggGeo, auraGeo, dartGeo, dizzyGeo, spinnerBossGeo, broodBossGeo, queenGeo } from './models-extra.js';
@@ -167,10 +167,10 @@ export function difficulty() {
   // the back half of the run ramps on top of the curve, so a snowballing build still has to sweat
   const late = Math.max(0, w - 14);
   return {
-    hp: (1 + w * 0.3 + w * w * 0.088) * (1 + late * late * 0.012),
+    hp: (1 + w * 0.3 + w * w * 0.088) * (1 + late * late * 0.012) * diffK('hp'),
     // the first waves bite gently while you find your feet; it gets mean after that
-    dmg: (w < 3 ? 0.75 + w * 0.08 : 1) + w * 0.165 + late * 0.12,
-    speed: 1 + Math.min(0.42, w * 0.02),
+    dmg: ((w < 3 ? 0.75 + w * 0.08 : 1) + w * 0.165 + late * 0.12) * diffK('dmg'),
+    speed: (1 + Math.min(0.42, w * 0.02)) * diffK('speed'),
   };
 }
 
@@ -279,7 +279,7 @@ function hordeTarget() {
   let t = (16 + w * 24 + G.waveTime * (0.9 + w * 0.16)) * (slowMo ? 2 : 1) * ramp;
   // boss fights thin the crowd so the boss can be read
   if (G.boss) t *= G.boss.kind === 'queen' ? 0.55 : 0.75;
-  return Math.min(maxEnemies(), t);
+  return Math.min(maxEnemies(), t * diffK('horde'));
 }
 
 export function director(dt) {
@@ -289,7 +289,7 @@ export function director(dt) {
   volley = Math.min(volley + dt * Math.min(1.3, 0.6 + w * 0.025), 2);
   const raid = G.mod?.id === 'slowmo' ? 2 : 1;
   const target = hordeTarget();
-  const rate = Math.min(40, 4 + w * 2) * raid * (E.length < target ? 1 : 0.15);
+  const rate = Math.min(40, 4 + w * 2) * diffK('horde') * raid * (E.length < target ? 1 : 0.15);
   spawnAcc += rate * dt;
   while (spawnAcc >= 1) {
     spawnAcc -= 1;
@@ -401,7 +401,7 @@ function kill(e) {
   if (e.grow > 0) xp = 1;
   dropXp(e.x, e.z, xp);
   const roll = Math.random() / G.stats.luck;
-  if (roll < 0.004) dropPickup('cake', e.x, e.z);
+  if (roll < 0.004 * G.diff.heal) dropPickup('cake', e.x, e.z);
   else if (roll < 0.0055) dropPickup('magnet', e.x, e.z);
   if (e.type === 'golden') {
     G.goldenCaught = (G.goldenCaught || 0) + 1;
@@ -412,7 +412,7 @@ function kill(e) {
   if (e.elite) {
     dropPickup('gift', e.x, e.z);
     dropPickup('gold', e.x + rand(-1, 1), e.z + rand(-1, 1));
-    if (Math.random() < 0.5) dropPickup('cake', e.x + rand(-1, 1), e.z + rand(-1, 1));
+    if (Math.random() < 0.5 * G.diff.heal) dropPickup('cake', e.x + rand(-1, 1), e.z + rand(-1, 1));
     burst(e.x, 1, e.z, 24, [0xff5ce1, 0xc77dff, 0xffffff], 8, 0.4, 0.8, 8);
     ring(e.x, e.z, 0.5, 4, 0.4, 0xff5ce1, 0.9);
     floater('ELITE DOWN!', e.x, 2.6, e.z, 'gold');
@@ -1019,7 +1019,7 @@ export function spawnBoss() {
   const mesh = bossMeshes[kind];
   const [x, z] = spawnPoint(G.viewR - 2);
   const n = Math.floor(G.wave / 5) - 1;
-  const hp = 900 * (1 + G.wave * 0.45) * (1 + n * 0.5) * K.hp;
+  const hp = 900 * (1 + G.wave * 0.45) * (1 + n * 0.5) * K.hp * diffK('hp');
   const b = {
     isBoss: true,
     kind,
@@ -1032,7 +1032,7 @@ export function spawnBoss() {
     r: K.r,
     scale: K.scale,
     // bosses hit hard but on their own, gentler curve: their attacks are telegraphed, not swarming
-    dmg: 28 * (1 + (G.wave - 1) * 0.075),
+    dmg: 28 * (1 + (G.wave - 1) * 0.075) * diffK('dmg'),
     state: 'walk',
     t: 3,
     summonT: 5,
