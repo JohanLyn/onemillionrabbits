@@ -15,7 +15,7 @@ const KINDS = {
   cake: { geo: cakeGeo, cap: 20, scale: 1.3, outline: 0.04 },
   magnet: { geo: magnetGeo, cap: 10, scale: 1.4, outline: 0.04 },
   chest: { geo: chestGeo, cap: 4, scale: 1.4, outline: 0.05 },
-  gift: { geo: giftGeo, cap: 16, scale: 1.3, outline: 0.05 },
+  gift: { geo: giftGeo, cap: 30, scale: 1.3, outline: 0.05 },
 };
 const items = [];
 const inst = {};
@@ -86,7 +86,7 @@ export function updatePickups(dt) {
     const dx = p.x - it.x, dz = p.z - it.z;
     const d2 = dx * dx + dz * dz;
     // treasure gets pulled in from further away, so you never miss a boss chest
-    const reach = it.kind === 'chest' ? 7 : it.kind === 'gift' ? 5 : it.kind === 'gold' ? mag * 2 : mag;
+    const reach = it.kind === 'chest' || it.kind === 'gift' ? 7 : it.kind === 'gold' ? mag * 2 : mag;
     // cake waits on the grass until you actually need it (no '+0 cake')
     if (!it.fly && d2 < reach * reach && (it.kind !== 'cake' || p.hp < p.maxHp)) it.fly = true;
     if (it.fly) {

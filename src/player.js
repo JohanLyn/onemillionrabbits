@@ -8,11 +8,11 @@ import { floater } from './fx.js';
 import { sfx } from './audio.js';
 
 export const CHARS = {
-  gardener: { name: 'The Gardener', emoji: '🧑‍🌾', weapon: 'chicken', price: 0, hp: 100, speed: 1, perk: '+25% pickup range', mods: { magnet: 0.25 } },
-  chef: { name: 'The Chef', emoji: '🧑‍🍳', weapon: 'toaster', price: 120, hp: 95, speed: 1, perk: '+15% blast area', mods: { area: 0.15 } },
-  dj: { name: 'DJ Fluffkiller', emoji: '🎧', weapon: 'disco', price: 250, hp: 90, speed: 1.05, perk: '-12% cooldowns', mods: { cooldown: 0.12 } },
-  monk: { name: 'The Space Monk', emoji: '🧘', weapon: 'sabre', price: 450, hp: 125, speed: 0.96, perk: '+15% damage, tanky', mods: { damage: 0.15 } },
-  grandma: { name: 'Grandma', emoji: '👵', weapon: 'slipper', price: 700, hp: 110, speed: 0.92, perk: '+30% damage, +1 reroll', mods: { damage: 0.3, rerolls: 1 } },
+  gardener: { name: 'The Gardener', emoji: '🧑‍🌾', weapon: 'chicken', price: 0, hp: 120, speed: 1, perk: '+25% pickup range', mods: { magnet: 0.25 } },
+  chef: { name: 'The Chef', emoji: '🧑‍🍳', weapon: 'toaster', price: 120, hp: 115, speed: 1, perk: '+15% blast area', mods: { area: 0.15 } },
+  dj: { name: 'DJ Fluffkiller', emoji: '🎧', weapon: 'disco', price: 250, hp: 105, speed: 1.05, perk: '-12% cooldowns', mods: { cooldown: 0.12 } },
+  monk: { name: 'The Space Monk', emoji: '🧘', weapon: 'sabre', price: 450, hp: 140, speed: 0.96, perk: '+15% damage, tanky', mods: { damage: 0.15 } },
+  grandma: { name: 'Grandma', emoji: '👵', weapon: 'slipper', price: 700, hp: 140, speed: 0.98, perk: '+30% damage, +1 reroll', mods: { damage: 0.3, rerolls: 1 } },
 };
 
 export const xpNeed = (L) => Math.round(4 + L * 4 + L * L * 0.32);

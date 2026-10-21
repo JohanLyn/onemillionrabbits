@@ -72,6 +72,8 @@ function endDraw() {
 }
 
 const P = () => G.player;
+// Lobbed weapons mostly aim at the rabbits that are about to bite you, sometimes further out.
+const closeTarget = (p) => (Math.random() < 0.7 && randomNear(p.x, p.z, 6.5)) || randomNear(p.x, p.z, 13);
 const area = () => G.stats.area;
 const cdm = () => G.stats.cooldown;
 const amt = () => G.stats.amount;
@@ -120,7 +122,7 @@ class Toaster extends Weapon {
     const n = this.L(this.count) + amt();
     let any = false;
     for (let i = 0; i < n; i++) {
-      const e = randomNear(p.x, p.z, 13);
+      const e = closeTarget(p);
       let tx, tz;
       if (e) {
         tx = e.x + e.kx * 0.2;
@@ -179,7 +181,7 @@ class Sabre extends Weapon {
     this.cyclone = cyclone;
     this.angle = 0;
   }
-  dmg = [9, 9, 13, 13, 18];
+  dmg = [15, 17, 22, 25, 34];
   blades = [1, 2, 2, 3, 4];
   spd = [3.2, 3.4, 3.6, 3.9, 4.3];
   update(dt) {
@@ -189,12 +191,12 @@ class Sabre extends Weapon {
     const n = cyc ? 8 : Math.min(8, this.L(this.blades) + amt());
     const sp = cyc ? 5.5 : this.L(this.spd);
     this.angle += dt * sp;
-    const dmg = cyc ? 24 : this.L(this.dmg);
+    const dmg = cyc ? 50 : this.L(this.dmg);
     this.blade = [];
     for (let i = 0; i < n; i++) {
       const outer = cyc && i % 2 === 1;
       const r0 = (outer ? 3.4 : 0.9) * (cyc ? ar : 1);
-      const len = (outer ? 2.6 : 1.9) * ar;
+      const len = (outer ? 3 : 2.3) * ar;
       const a = (outer ? -this.angle * 0.8 : this.angle) + (i / n) * Math.PI * 2;
       const ca = Math.cos(a), sa = Math.sin(a);
       const ax = p.x + ca * r0, az = p.z + sa * r0, bx = p.x + ca * (r0 + len), bz = p.z + sa * (r0 + len);
@@ -301,7 +303,7 @@ class Chicken extends Weapon {
 
 // ---------- Leaf Blower: hurricane cone ----------
 class Blower extends Weapon {
-  dmg = [7, 7, 10, 10, 14];
+  dmg = [12, 15, 18, 22, 28];
   range = [5.5, 6, 6.5, 7, 8];
   half = [0.5, 0.55, 0.6, 0.65, 0.75];
   cds = [2.0, 1.8, 1.7, 1.5, 1.3];
@@ -339,7 +341,7 @@ class Bees extends Weapon {
     super(id);
     this.swarm = swarm;
   }
-  dmg = [5, 5, 7, 7, 9];
+  dmg = [7, 8, 10, 11, 14];
   count = [3, 4, 5, 6, 8];
   stings = [2, 2, 3, 3, 4];
   cds = [2.6, 2.4, 2.2, 2.0, 1.8];
@@ -357,7 +359,7 @@ class Bees extends Weapon {
   update(dt) {
     this.tick(dt);
     const sp = this.swarm ? 13 : 9.5;
-    const dmg = this.swarm ? 16 : this.L(this.dmg);
+    const dmg = this.swarm ? 26 : this.L(this.dmg);
     this.items = this.items.filter((b) => {
       b.life -= dt;
       b.hcd -= dt;
@@ -420,8 +422,8 @@ class Disco extends Weapon {
     this.shots = [0, 0, 0];
   }
   balls = [1, 1, 2, 2, 3];
-  rate = [0.55, 0.45, 0.45, 0.38, 0.3];
-  dmg = [8, 10, 10, 13, 15];
+  rate = [0.45, 0.4, 0.4, 0.34, 0.28];
+  dmg = [12, 14, 16, 19, 24];
   update(dt) {
     const p = P();
     this.angle += dt * 1.1;
@@ -436,12 +438,12 @@ class Disco extends Weapon {
       const range = 10 * (0.8 + 0.2 * area());
       const e = nearest(bx, bz, range);
       if (!e) continue;
-      this.shots[i] = (this.storm ? 0.35 : this.L(this.rate)) * cdm();
+      this.shots[i] = (this.storm ? 0.28 : this.L(this.rate)) * cdm();
       _c.setHSL(Math.random(), 1, 0.6);
       _a.set(bx, by, bz);
       if (this.storm) {
         const hit = new Set();
-        let cur = e, from = _a.clone(), d = 22;
+        let cur = e, from = _a.clone(), d = 36;
         for (let j = 0; j < 5 && cur; j++) {
           hit.add(cur.id);
           _b.set(cur.x, 0.9 * cur.scale, cur.z);
@@ -538,10 +540,10 @@ class Slipper extends Weapon {
     super(id);
     this.meteor = meteor;
   }
-  dmg = [35, 35, 45, 45, 60];
-  count = [1, 1, 2, 2, 3];
+  dmg = [35, 38, 45, 48, 60];
+  count = [1, 2, 2, 2, 3];
   rad = [2.4, 2.6, 2.8, 3, 3.4];
-  cds = [2.9, 2.6, 2.5, 2.3, 2.0];
+  cds = [2.1, 2.2, 2.1, 1.9, 1.8];
   cooldown() { return this.meteor ? 2.0 : this.L(this.cds); }
   fire() {
     const p = P();
@@ -549,7 +551,7 @@ class Slipper extends Weapon {
     const R = (this.meteor ? 4.5 : this.L(this.rad)) * area();
     let any = false;
     for (let i = 0; i < n; i++) {
-      const e = randomNear(p.x, p.z, 13);
+      const e = closeTarget(p);
       if (!e) break;
       any = true;
       const T = this.meteor ? 0.9 : 0.6;
@@ -613,7 +615,7 @@ const pick3 = () => [0xff6a00, 0xffd23f, 0xff3d2e][Math.floor(Math.random() * 3)
 
 // ---------- Thunder Plunger: 10,000 volt bonk that chains ----------
 class Plunger extends Weapon {
-  dmg = [14, 14, 18, 18, 24];
+  dmg = [20, 23, 28, 32, 42];
   chains = [2, 3, 3, 4, 6];
   cds = [1.5, 1.4, 1.3, 1.2, 1.0];
   cooldown() { return this.L(this.cds); }
@@ -696,7 +698,7 @@ function drawPeels() {
   }
 }
 class Banana extends Weapon {
-  dmg = [22, 22, 30, 30, 40];
+  dmg = [26, 28, 36, 38, 50];
   count = [1, 2, 2, 3, 4];
   life = [8, 8, 10, 10, 12];
   uses = [1, 1, 1, 2, 2];
@@ -792,7 +794,7 @@ class Gnome extends Weapon {
     this.angle = 0;
   }
   count = [1, 2, 2, 3, 3];
-  dmg = [8, 8, 11, 11, 15];
+  dmg = [10, 11, 14, 15, 20];
   rate = [0.7, 0.65, 0.55, 0.5, 0.4];
   life = [9, 10, 11, 12, 14];
   cds = [4.2, 3.9, 3.6, 3.3, 3.0];
@@ -815,7 +817,7 @@ class Gnome extends Weapon {
   update(dt) {
     const p = P();
     const choir = this.choir;
-    const dmg = choir ? 20 : this.L(this.dmg);
+    const dmg = choir ? 30 : this.L(this.dmg);
     const range = (choir ? 10 : 8.5) * (0.8 + 0.2 * area());
     if (choir) {
       // the choir walks a slow circle around you
@@ -831,7 +833,7 @@ class Gnome extends Weapon {
       this.honkT -= dt;
       if (this.honkT <= 0 && nearest(p.x, p.z, 8)) {
         this.honkT = 3 * cdm();
-        honk(p.x, p.z, 8.5 * area(), 26, 2.6, this.id, true);
+        honk(p.x, p.z, 8.5 * area(), 40, 2.6, this.id, true);
         for (const g of this.gnomes) g.kick = 0.3;
       }
     } else this.tick(dt);
@@ -914,10 +916,10 @@ class Lasso extends Weapon {
     this.ropes = [];
   }
   count = [1, 1, 2, 2, 3];
-  dmg = [12, 15, 15, 19, 25];
-  fling = [30, 38, 38, 48, 64];
+  dmg = [20, 24, 26, 30, 38];
+  fling = [50, 60, 66, 78, 100];
   swing = [1.6, 1.9, 1.9, 2.2, 2.6];
-  rad = [3, 3.3, 3.3, 3.7, 4.1];
+  rad = [3.8, 4.2, 4.4, 4.8, 5.4];
   cds = [2.6, 2.4, 2.2, 2.0, 1.7];
   cooldown() { return this.L(this.cds); }
   fire() {
@@ -957,9 +959,9 @@ class Lasso extends Weapon {
           sfx('squeak');
         }
       } else {
-        // reel it in to the swing radius while whirling it around you
-        r.a += dt * 7.5;
-        r.r0 = damp(r.r0, R, 6, dt);
+        // whirl it around you, swinging in and out so it sweeps a wide band
+        r.a += dt * 7;
+        r.r0 = damp(r.r0, R + Math.sin(r.t * 3.1) * 1.3, 6, dt);
         const ca = Math.cos(r.a), sa = Math.sin(r.a);
         e.x = p.x + ca * r.r0;
         e.z = p.z + sa * r.r0;
@@ -967,7 +969,7 @@ class Lasso extends Weapon {
         e.vy = 0;
         e.kx = e.kz = 0;
         e.spin += dt * 12;
-        queryCircle(e.x, e.z, e.r + 0.4, (o) => {
+        queryCircle(e.x, e.z, e.r + 0.75, (o) => {
           if (o === e || o.held > G.time || (o.hits.lasso || 0) > G.time) return;
           o.hits.lasso = G.time + 0.35;
           damage(o, dmg, this.id, (-sa + ca * 0.5) * 12, (ca + sa * 0.5) * 12, o.isBoss ? undefined : { launch: 4 });
@@ -1152,7 +1154,7 @@ export const WEAPONS = {
   bees: { name: 'Jar of Angry Bees', emoji: '🐝', desc: 'Releases very angry, very homing bees.', ups: ['+1 bee', '+1 bee, more stings', '+1 bee', '+2 bees, extra spicy'], make: () => new Bees('bees') },
   disco: { name: 'Disco Ball Drone', emoji: '🪩', desc: 'An orbiting disco ball that fires groovy lasers.', ups: ['Faster lasers', '+1 disco ball', 'Funkier damage', '+1 disco ball, Saturday night'], make: () => new Disco('disco') },
   pipes: { name: 'Bagpipes of Doom', emoji: '🎵', desc: 'A horrific wail. Expanding rings of noise.', ups: ['Bigger ring', 'Louder (more damage)', 'Bigger, more often', 'The whole clan joins in'], make: () => new Pipes('pipes') },
-  slipper: { name: "Grandma's Slipper", emoji: '🩴', desc: 'A colossal slipper falls from the heavens. Fwump.', ups: ['Faster', '+1 slipper, bigger', 'Bigger slippers', '+1 slipper, Grandma is furious'], make: () => new Slipper('slipper') },
+  slipper: { name: "Grandma's Slipper", emoji: '🩴', desc: 'A colossal slipper falls from the heavens. Fwump.', ups: ['+1 slipper', 'Bigger, harder slippers', 'Faster, bigger', '+1 slipper, Grandma is furious'], make: () => new Slipper('slipper') },
   plunger: { name: 'Thunder Plunger', emoji: '🪠', desc: 'A 10,000 volt plunger bonk that chains between rabbits.', ups: ['+1 chain', 'More voltage', '+1 chain, faster', '+2 chains, overcharged'], make: () => new Plunger('plunger') },
   banana: { name: 'Banana Peels', emoji: '🍌', desc: 'Drops peels. Rabbits slip, spin and go flying.', ups: ['+1 peel', 'Peels last longer, hurt more', '+1 peel, survive 2 slips', '+1 peel, maximum slapstick'], make: () => new Banana('banana') },
   gnome: { name: 'Garden Gnome Sentries', emoji: '🧙', desc: 'Plants garden gnomes that pelt rabbits with acorns.', ups: ['+1 gnome on duty', 'Harder acorns, longer shifts', '+1 gnome, faster slingshots', 'Gnome union: everything better'], make: () => new Gnome('gnome') },
@@ -1228,7 +1230,7 @@ export function drawWeapons() {
 const ults = [];
 export function fireUltimate() {
   const p = P();
-  const dmg = 160 + G.wave * 30;
+  const dmg = 140 + G.wave * 24;
   for (let i = 0; i < 36; i++) {
     const e = randomNear(p.x, p.z, G.viewR);
     const x = e ? e.x + rand(-1, 1) : p.x + rand(-G.viewR, G.viewR) * 0.8;

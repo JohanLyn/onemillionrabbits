@@ -17,7 +17,7 @@ export const TYPES = {
   jackalope: { hp: 34, speed: 3.3, dmg: 12, xp: 3, scale: 1.1, fur: 0x8a5a3a },
   bomb: { hp: 14, speed: 4.3, dmg: 22, xp: 2, scale: 1, fur: 0x5b5566 },
   golden: { hp: 30, speed: 5.6, dmg: 0, xp: 25, scale: 1, fur: 0xffcc33 },
-  archer: { hp: 20, speed: 2.7, dmg: 6, shot: 14, xp: 3, scale: 1, fur: 0xd9b77e, geo: archerGeo },
+  archer: { hp: 20, speed: 2.7, dmg: 6, shot: 12, xp: 3, scale: 1, fur: 0xd9b77e, geo: archerGeo },
   burrower: { hp: 28, speed: 3.1, dmg: 8, shot: 20, xp: 3, scale: 1, fur: 0x8c6f56, geo: burrowerGeo },
   egg: { hp: 40, speed: 0, dmg: 0, xp: 1, scale: 1.1, fur: 0xfff1f8, geo: eggGeo },
 };
@@ -156,6 +156,8 @@ export function clearEnemies() {
   G.seenElite = false;
   eliteAcc = 0;
   spawnAcc = 0;
+  ultBudget = 0;
+  volley = 0;
   G.victory = false;
   G.bossLog = [];
 }
@@ -163,14 +165,17 @@ export function clearEnemies() {
 export function difficulty() {
   const w = G.wave - 1;
   return {
-    hp: 1 + w * 0.24 + w * w * 0.014,
-    dmg: 1 + w * 0.07,
-    speed: 1 + Math.min(0.35, w * 0.018),
+    hp: 1 + w * 0.3 + w * w * 0.07,
+    // the first waves bite gently while you find your feet; it gets mean after that
+    dmg: (w < 3 ? 0.75 + w * 0.08 : 1) + w * 0.15,
+    speed: 1 + Math.min(0.42, w * 0.02),
   };
 }
 
 export function spawnEnemy(type, x, z, opts = {}) {
-  if (E.length >= maxEnemies() && !opts.force) return null;
+  // forced spawns (horde rings, boss summons) may overshoot the cap a little, never past what we can draw
+  if (E.length >= maxEnemies() + (opts.force ? 55 : 0)) return null;
+  if (type === 'egg' && eggCount() >= 50) return null;
   const T = TYPES[type];
   const d = G.state === 'menu' ? { hp: 1, dmg: 0, speed: 1 } : difficulty();
   const e = free.pop() || {};
@@ -226,6 +231,12 @@ export function spawnEnemy(type, x, z, opts = {}) {
   return e;
 }
 
+function eggCount() {
+  let n = 0;
+  for (const e of E) if (e.alive && e.type === 'egg') n++;
+  return n;
+}
+
 // Pick a spawn spot just beyond the edge of the screen.
 export function spawnPoint(dist = G.viewR + 3, angle = rand(0, Math.PI * 2)) {
   const p = G.player;
@@ -238,13 +249,13 @@ export function spawnPoint(dist = G.viewR + 3, angle = rand(0, Math.PI * 2)) {
 }
 
 // ---------- the wave director ----------
-let spawnAcc = 0, goldenAcc = 0, eliteAcc = 0;
+let spawnAcc = 0, goldenAcc = 0, eliteAcc = 0, ultBudget = 0, volley = 0;
 function chooseType() {
   const w = G.wave;
   const weights = [['bunny', 10]];
   if (w >= 2) weights.push(['hare', 3 + w * 0.35]);
   if (w >= 3) weights.push(['chonk', 1 + w * 0.25]);
-  if (w >= 4) weights.push(['archer', 0.8 + w * 0.08]);
+  if (w >= 4) weights.push(['archer', 0.7 + w * 0.05]);
   if (w >= 5) weights.push(['jackalope', 1 + w * 0.22]);
   if (w >= 7) weights.push(['bomb', 1.2 + w * 0.16]);
   if (w >= 8) weights.push(['burrower', 0.8 + w * 0.08]);
@@ -261,7 +272,7 @@ function hordeTarget() {
   const slowMo = G.mod?.id === 'slowmo';
   // the very first wave ramps up so you get a few seconds to find your feet
   const ramp = w === 1 ? 0.4 + 0.6 * Math.min(1, G.waveTime / 35) : 1;
-  let t = (24 + w * 20 + G.waveTime * (0.9 + w * 0.14)) * (slowMo ? 2 : 1) * ramp;
+  let t = (16 + w * 24 + G.waveTime * (0.9 + w * 0.16)) * (slowMo ? 2 : 1) * ramp;
   // boss fights thin the crowd so the boss can be read
   if (G.boss) t *= G.boss.kind === 'queen' ? 0.55 : 0.75;
   return Math.min(maxEnemies(), t);
@@ -269,6 +280,9 @@ function hordeTarget() {
 
 export function director(dt) {
   const w = G.wave;
+  ultBudget = Math.min(ultBudget + (dt * G.stats.ultCost) / 40, G.stats.ultCost);
+  // archers share a fire budget so a big crowd of them stays a hazard, not a bullet hell
+  volley = Math.min(volley + dt * Math.min(1.6, 0.7 + w * 0.03), 2);
   const raid = G.mod?.id === 'slowmo' ? 2 : 1;
   const target = hordeTarget();
   const rate = Math.min(40, 4 + w * 2) * raid * (E.length < target ? 1 : 0.15);
@@ -372,7 +386,10 @@ function kill(e) {
   e.alive = false;
   G.kills++;
   G.remaining--;
-  G.ultCharge = Math.min(G.stats.ultCost, G.ultCharge + (e.elite ? 10 : 1));
+  // kills charge the strike, but no faster than once every ~40s even when the horde melts
+  const gain = Math.min(ultBudget, e.elite ? 10 : 1);
+  ultBudget -= gain;
+  G.ultCharge = Math.min(G.stats.ultCost, G.ultCharge + gain);
   poof(e.x, e.z, e.scale, e.T.fur);
   sfx('pop');
   let xp = e.xp * (G.mod?.id === 'hats' ? 2 : 1);
@@ -409,7 +426,7 @@ function bombBlast(e, hurtPlayer) {
   queryCircle(e.x, e.z, R, (o) => {
     if (o === e) return;
     const dx = o.x - e.x, dz = o.z - e.z, d = Math.hypot(dx, dz) || 1;
-    damage(o, 45, 'bomb', (dx / d) * 14, (dz / d) * 14, { launch: 7 });
+    damage(o, 36, 'bomb', (dx / d) * 14, (dz / d) * 14, { launch: 7 });
   });
 }
 
@@ -535,7 +552,9 @@ function archerBrain(e, d, dt) {
     return 1;
   }
   if (e.state === 'aim') {
-    if (e.stateT <= 0) {
+    if (e.stateT <= 0 && volley < 1) e.stateT = rand(0.2, 0.6); // wait for a gap in the volley
+    else if (e.stateT <= 0) {
+      volley--;
       const p = G.player;
       lob(e.x, e.z, p.x + rand(-0.6, 0.6), p.z + rand(-0.6, 0.6), e.shot, 1.15, 1.35);
       e.state = 'walk';
@@ -622,7 +641,8 @@ export function updateEnemies(dt) {
   const menu = G.state === 'menu';
   const moon = G.mod?.id === 'moon';
   const jelly = G.mod?.id === 'jelly';
-  const loveRate = G.mod?.id === 'fever' ? 4 : 1;
+  // a gentler first wave: love takes its time
+  const loveRate = (G.mod?.id === 'fever' ? 4 : 1) * (G.wave === 1 ? 0.5 : 1);
   const slow = G.mod?.id === 'slowmo' ? 0.55 : 1;
   const gravity = moon ? 9 : 30;
   const t = G.time;
@@ -950,7 +970,7 @@ const BOSSES = {
     names: ['COLONEL CARROTS', 'GENERAL HOPPENHEIMER'],
     sub: 'it brought a carrot gatling',
     geo: spinnerBossGeo,
-    hp: 0.9, scale: 3.3, r: 2.2, speed: 1.9, keep: 8,
+    hp: 0.75, scale: 3.3, r: 2.2, speed: 1.9, keep: 7,
     phases: [0.5],
     attacks: [['spiral', 'volley'], ['spiral3', 'volley', 'fan']],
     rest: [[2.6, 3.6], [1.8, 2.6]],
@@ -970,7 +990,7 @@ const BOSSES = {
     names: ['THE RABBIT QUEEN'],
     sub: 'the mother of all one million rabbits',
     geo: queenGeo,
-    hp: 3.2, scale: 4.3, r: 2.9, speed: 2.4,
+    hp: 1.35, scale: 4.3, r: 2.9, speed: 2.4,
     phases: [0.66, 0.33],
     attacks: [['leap', 'volley', 'leap'], ['spiral', 'lay', 'leap', 'volley'], ['leap2', 'spiral3', 'charge', 'fan', 'lay']],
     rest: [[2.8, 3.6], [2.2, 3], [1.4, 2.2]],
@@ -1005,7 +1025,8 @@ export function spawnBoss() {
     hp, maxHp: hp,
     r: K.r,
     scale: K.scale,
-    dmg: 28 * difficulty().dmg,
+    // bosses hit hard but on their own, gentler curve: their attacks are telegraphed, not swarming
+    dmg: 28 * (1 + (G.wave - 1) * 0.075),
     state: 'walk',
     t: 3,
     summonT: 5,

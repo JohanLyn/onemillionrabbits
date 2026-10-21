@@ -1,8 +1,9 @@
 // Balance harness: a bot plays real runs (no invulnerability) and reports how far each survivor gets.
 //   npm run build && node scripts/balance.mjs [--runs 3] [--chars gardener,chef] [--shed none|mid|max]
 //        [--mobile] [--workers 3] [--max-wave 31] [--json out.json] [--url file:///.../dist/index.html]
-// The bot steers with synthetic WASD key events between short __omr.advance() steps: away from nearby
-// rabbit mass, telegraphs and carrot projectiles, toward carrots (XP). Level-up cards are picked with a
+// The bot steers with synthetic WASD key events between short __omr.advance() steps: every 0.25s it
+// tries 16 directions and keeps the one that stays furthest from rabbits, telegraphs and carrot darts,
+// with a gentle pull toward carrots (XP). Level-up cards are picked with a
 // simple heuristic by pressing the 1-4 keys. Everything runs inside the page so headless frame rate
 // doesn't matter.
 import { chromium } from 'playwright';
@@ -41,13 +42,51 @@ const browser = await chromium.launch({
 // Runs `seconds` of game time. Returns a status snapshot, or the final result when the run ended.
 function botChunk({ seconds, maxWave }) {
   const O = window.__omr, G = O.G, E = O.E;
-  const bot = (window.__bot ||= { keys: new Set(), lastX: 0, lastZ: 0, stuckT: 0, detour: 0, detourT: 0, fusedAt: {}, peak: 0 });
+  const bot = (window.__bot ||= { keys: new Set(), lastX: 0, lastZ: 0, stuckT: 0, detour: 0, detourT: 0, px: 0, pz: 0, fusedAt: {}, peak: 0 });
   const key = (k, down) => {
     if (down === bot.keys.has(k)) return;
     if (down) bot.keys.add(k);
     else bot.keys.delete(k);
     window.dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { key: k }));
   };
+  // record what hurts us, by source, so balance reports can say what kills runs
+  if (!bot.hurtHooked) {
+    bot.hurtHooked = true;
+    bot.taken = {};
+    bot.recent = [];
+    const p = G.player, orig = p.hurt.bind(p);
+    p.hurt = (dmg, big) => {
+      const before = p.hp;
+      orig(dmg, big);
+      const lost = before - p.hp;
+      if (lost <= 0) return;
+      let cause = 'other', bd = 9;
+      const b = G.boss;
+      if (b && b.alive && Math.hypot(b.x - p.x, b.z - p.z) < b.r + 6) cause = 'boss:' + b.kind;
+      else {
+        for (const s of G.enemyShots || []) {
+          const d = Math.hypot((s.lob ? s.tx : s.x) - p.x, (s.lob ? s.tz : s.z) - p.z);
+          if (d < 2.2 && d < bd) {
+            bd = d;
+            cause = s.lob ? 'lob' : 'dart';
+          }
+        }
+        if (cause === 'other') {
+          for (const e of E) {
+            if (!e.alive) continue;
+            const d = Math.hypot(e.x - p.x, e.z - p.z) - e.r;
+            if (d < bd) {
+              bd = d;
+              cause = (e.elite ? 'elite-' : '') + e.type;
+            }
+          }
+        }
+      }
+      bot.taken[cause] = (bot.taken[cause] || 0) + lost;
+      bot.recent.push([G.runTime, cause, lost]);
+      while (bot.recent.length && bot.recent[0][0] < G.runTime - 12) bot.recent.shift();
+    };
+  }
   const PREF = { spinach: 16, timer: 14, megaphone: 18, hat: 10, cake: 12, foil: 8, espresso: 6, magnet: 4, sock: 6, book: 3 };
   const NAME_PREF = { 'Suspicious Spinach': 16, 'Overclocked Egg Timer': 14, 'Megaphone of Excess': 18, 'Ridiculously Large Hat': 10, 'Carrot Cake': 12, 'Tin Foil Armor': 8, 'Triple Espresso': 6 };
   const nWeapons = () => G.weapons.length;
@@ -90,109 +129,110 @@ function botChunk({ seconds, maxWave }) {
     window.dispatchEvent(new KeyboardEvent('keyup', { key: String(best + 1) }));
   }
 
+  // Try 16 directions; score where each one puts us in ~0.4s and ~0.9s, keep the safest.
+  const DIRS = 16;
   function steer() {
     const p = G.player;
-    let vx = 0, vz = 0;
-    // rabbits: inverse-square repulsion, heavier for big ones
+    const sp = 6.2 * G.stats.speed;
+    const near = [];
     for (let i = 0; i < E.length; i++) {
       const e = E[i];
-      if (!e.alive || e.under || e.held > G.time) continue;
-      const dx = p.x - e.x, dz = p.z - e.z, d2 = dx * dx + dz * dz;
-      if (d2 > 100) continue;
-      const d = Math.sqrt(d2) || 0.01;
-      const w = (e.dmg > 0 ? 1 : 0.1) * (0.6 + e.r) / (d2 + 0.3);
-      vx += (dx / d) * w;
-      vz += (dz / d) * w;
+      if (!e.alive || e.under || e.held > G.time || e.dmg <= 0) continue;
+      const dx = e.x - p.x, dz = e.z - p.z;
+      if (dx * dx + dz * dz < 144) near.push(e);
     }
-    // burrowers about to pop up, boss and its slam target
-    const avoid = (x, z, r, wt) => {
-      const dx = p.x - x, dz = p.z - z, d = Math.hypot(dx, dz) || 0.01;
-      if (d > r + 2.5) return;
-      const k = wt * (r + 2.5 - d);
-      vx += (dx / d) * k;
-      vz += (dz / d) * k;
-    };
-    for (const e of E) if (e.alive && e.state === 'mound') avoid(e.x, e.z, 1.8, 1.2);
-    const b = G.boss;
-    if (b && b.alive) {
-      avoid(b.x, b.z, b.r + 3, 1.5);
-      if (b.tx !== undefined && (b.state === 'crouch' || b.state === 'air')) avoid(b.tx, b.tz, 5.5, 3);
-    }
-    for (const s of G.enemyShots || []) {
-      if (s.lob) avoid(s.tx, s.tz, s.r, 2.5);
-      else {
-        const dx = p.x - s.x, dz = p.z - s.z, d2 = dx * dx + dz * dz;
-        if (d2 < 30 && (s.vx * dx + s.vz * dz) > 0) {
-          // sidestep perpendicular to the bullet's path
-          const sp = Math.hypot(s.vx, s.vz) || 1, nx = -s.vz / sp, nz = s.vx / sp;
-          const side = nx * dx + nz * dz >= 0 ? 1 : -1;
-          vx += nx * side * 3 / (d2 + 1);
-          vz += nz * side * 3 / (d2 + 1);
-        }
-      }
-    }
-    for (const h of G.hazards || []) avoid(h.x, h.z, h.r, 3);
-    const danger = Math.hypot(vx, vz);
-    // carrots, cake when hurt, chests always
-    let best = null, bd = 1e9;
+    const b = G.boss && G.boss.alive ? G.boss : null;
+    const zones = [];
+    for (const e of E) if (e.alive && (e.state === 'mound' || e.state === 'under') && (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < 100) zones.push([e.state === 'under' ? e.tx : e.x, e.state === 'under' ? e.tz : e.z, 2.3]);
+    if (b && (b.state === 'crouch' || b.state === 'air')) zones.push([b.tx, b.tz, 5.8]);
+    if (b && (b.state === 'chargeaim' || b.state === 'charge')) for (let i = 0; i <= 8; i++) zones.push([b.x + b.dirx * i * 2.4, b.z + b.dirz * i * 2.4, b.r + 1]);
+    for (const s of G.enemyShots || []) if (s.lob) zones.push([s.tx, s.tz, s.r + 0.6]);
+    // where we'd like to go: nearest valuable pickup, else toward rabbits from a distance
+    let gx = 0, gz = 0, goal = null, bd = 1e9;
     for (const it of G.pickups || []) {
       if (it.dead) continue;
+      if (it.kind === 'cake' && p.hp > p.maxHp * 0.7) continue;
       const d2 = (it.x - p.x) ** 2 + (it.z - p.z) ** 2;
-      const pri = it.kind === 'chest' || it.kind === 'gift' ? 0.2 : it.kind === 'cake' ? (p.hp < p.maxHp * 0.6 ? 0.3 : 3) : it.kind === 'gold' ? 0.6 : 1;
-      if (d2 * pri < bd && d2 < 400) {
+      const pri = it.kind === 'chest' || it.kind === 'gift' ? 0.15 : it.kind === 'cake' ? 0.3 : it.kind === 'gold' ? 0.6 : 1;
+      if (d2 * pri < bd && d2 < 625) {
         bd = d2 * pri;
-        best = it;
+        goal = it;
       }
     }
-    if (best) {
-      const dx = best.x - p.x, dz = best.z - p.z, d = Math.hypot(dx, dz) || 1;
-      const k = danger < 0.5 ? 0.9 : 0.35;
-      vx += (dx / d) * k;
-      vz += (dz / d) * k;
-    } else if (danger < 0.2) {
-      // nothing nearby: drift toward the nearest rabbit so the weapons have work
-      let ne = null, nd = 1e9;
-      for (const e of E) {
-        const d2 = (e.x - p.x) ** 2 + (e.z - p.z) ** 2;
-        if (e.alive && d2 < nd) {
-          nd = d2;
-          ne = e;
+    if (goal) {
+      const d = Math.hypot(goal.x - p.x, goal.z - p.z) || 1;
+      gx = (goal.x - p.x) / d;
+      gz = (goal.z - p.z) / d;
+    }
+    const crowded = near.some((e) => (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < 12);
+    let best = -1, bs = Infinity;
+    for (let k = 0; k <= DIRS; k++) {
+      // k === DIRS means standing still
+      const a = (k / DIRS) * Math.PI * 2;
+      const dx = k === DIRS ? 0 : Math.cos(a), dz = k === DIRS ? 0 : Math.sin(a);
+      let score = 0;
+      for (const [tt, wt] of [[0.35, 1], [0.9, 0.5]]) {
+        const x = p.x + dx * sp * tt, z = p.z + dz * sp * tt;
+        for (const e of near) {
+          // rabbits close in on us meanwhile
+          const ex = e.x + (p.x - e.x) * Math.min(1, (e.speed * tt) / (Math.hypot(p.x - e.x, p.z - e.z) + 0.01)) * 0.7;
+          const ez = e.z + (p.z - e.z) * Math.min(1, (e.speed * tt) / (Math.hypot(p.x - e.x, p.z - e.z) + 0.01)) * 0.7;
+          const d2 = (x - ex) ** 2 + (z - ez) ** 2;
+          const rr = e.r + p.r + 0.3;
+          // only rabbits that could plausibly reach us matter
+          score += wt * (e.dmg + 4) * Math.max(0, 1 / (Math.max(0.05, d2 - rr * rr * 0.5) + 0.4) - 0.05);
         }
+        if (b) {
+          const d2 = (x - b.x) ** 2 + (z - b.z) ** 2, rr = b.r + 1.5;
+          score += (wt * 400) / (Math.max(0.05, d2 - rr * rr) + 1);
+        }
+        for (const [zx, zz, zr] of zones) if ((x - zx) ** 2 + (z - zz) ** 2 < zr * zr) score += wt * 400;
+        for (const s of G.enemyShots || []) {
+          if (s.lob) continue;
+          const sx = s.x + s.vx * tt, sz = s.z + s.vz * tt;
+          const d2 = (x - sx) ** 2 + (z - sz) ** 2;
+          if (d2 < 2.5) score += (wt * 150) / (d2 + 0.3);
+        }
+        if (Math.abs(x) > 98 || Math.abs(z) > 98) score += wt * 300;
       }
-      if (ne && nd > 36) {
-        vx += (ne.x - p.x) / Math.sqrt(nd) * 0.4;
-        vz += (ne.z - p.z) / Math.sqrt(nd) * 0.4;
+      score -= (crowded ? 3 : 10) * (dx * gx + dz * gz); // a pull toward the goal, weaker when rabbits are close
+      score -= 2 * (dx * bot.px + dz * bot.pz); // and a little momentum against jitter
+      if (Math.abs(p.x) > 75) score += dx * Math.sign(p.x) * 3;
+      if (Math.abs(p.z) > 75) score += dz * Math.sign(p.z) * 3;
+      if (score < bs) {
+        bs = score;
+        best = k;
       }
     }
-    // stay away from the fence corners
-    const lim = 80;
-    if (Math.abs(p.x) > lim) vx -= Math.sign(p.x) * (Math.abs(p.x) - lim) * 0.08;
-    if (Math.abs(p.z) > lim) vz -= Math.sign(p.z) * (Math.abs(p.z) - lim) * 0.08;
+    let nx = 0, nz = 0;
+    if (best < DIRS) {
+      const a = (best / DIRS) * Math.PI * 2;
+      nx = Math.cos(a);
+      nz = Math.sin(a);
+    }
     // stuck on a tree: take a sideways detour for a moment
     const moved = Math.hypot(p.x - bot.lastX, p.z - bot.lastZ);
     bot.lastX = p.x;
     bot.lastZ = p.z;
-    if (bot.keys.size && moved < 0.25) bot.stuckT += 0.25;
+    if (bot.keys.size && moved < 0.3) bot.stuckT += 0.25;
     else bot.stuckT = 0;
     if (bot.stuckT > 0.5) {
       bot.detour = Math.random() < 0.5 ? 1 : -1;
       bot.detourT = 0.75;
       bot.stuckT = 0;
     }
-    if (bot.detourT > 0) {
+    if (bot.detourT > 0 && (nx || nz)) {
       bot.detourT -= 0.25;
-      const l = Math.hypot(vx, vz) || 1;
-      const tx = (-vz / l) * bot.detour, tz = (vx / l) * bot.detour;
-      vx = tx;
-      vz = tz;
+      const tx = -nz * bot.detour, tz = nx * bot.detour;
+      nx = tx;
+      nz = tz;
     }
-    const l = Math.hypot(vx, vz);
-    const go = l > 0.02;
-    const nx = go ? vx / l : 0, nz = go ? vz / l : 0;
-    key('d', go && nx > 0.38);
-    key('a', go && nx < -0.38);
-    key('s', go && nz > 0.38);
-    key('w', go && nz < -0.38);
+    bot.px = nx;
+    bot.pz = nz;
+    key('d', nx > 0.38);
+    key('a', nx < -0.38);
+    key('s', nz > 0.38);
+    key('w', nz < -0.38);
   }
 
   const step = 1 / 30;
@@ -227,6 +267,9 @@ function botChunk({ seconds, maxWave }) {
     weapons: G.weapons.map((w) => `${w.id}:${w.fused ? '*' : w.level}`).join(' '),
     passives: G.passives.map((p) => `${p.id}:${p.level}`).join(' '),
     fusedAt: bot.fusedAt,
+    taken: Object.fromEntries(Object.entries(bot.taken).map(([k, v]) => [k, Math.round(v)])),
+    killer: Object.entries(bot.recent.reduce((m, [, c, v]) => ((m[c] = (m[c] || 0) + v), m), {})).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k}:${Math.round(v)}`).join(' '),
+    bosses: (G.bossLog || []).map((x) => `${x.wave}:${x.kind}:${x.t}s`).join(' '),
     damageBy: Object.fromEntries(Object.entries(G.damageBy).map(([k, v]) => [k, Math.round(v)])),
   };
 }
@@ -235,8 +278,8 @@ async function playRun(ctx, char) {
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto(url);
-  await page.waitForFunction(() => window.__omr && window.__omr.G.state === 'menu', null, { timeout: 30000 });
+  await page.goto(url, { timeout: 120000 });
+  await page.waitForFunction(() => window.__omr && window.__omr.G.state === 'menu', null, { timeout: 120000 });
   await page.evaluate(() => window.__omr.startRun());
   let r;
   for (;;) {
@@ -269,13 +312,21 @@ let next = 0;
 async function worker() {
   while (next < jobs.length) {
     const char = jobs[next++];
-    const ctx = await makeContext(char);
     const t0 = Date.now();
-    const r = await playRun(ctx, char);
-    await ctx.close();
+    let r = null;
+    for (let attempt = 0; attempt < 3 && !r; attempt++) {
+      const ctx = await makeContext(char);
+      try {
+        r = await playRun(ctx, char);
+      } catch (err) {
+        console.log(`(${char}: retrying after ${err.message.split('\n')[0]})`);
+      }
+      await ctx.close();
+    }
+    if (!r) continue;
     results.push(r);
     const top = Object.entries(r.damageBy).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => k + ':' + v).join(' ');
-    console.log(`${char.padEnd(9)} wave ${String(r.wave).padStart(2)} ${String(r.t).padStart(4)}s kills ${String(r.kills).padStart(6)} lv ${r.level} peak ${r.peak}${r.victory ? ' VICTORY' : ''} | ${r.weapons} | ${r.passives} | top ${top} | fused ${JSON.stringify(r.fusedAt)} (${((Date.now() - t0) / 1000).toFixed(0)}s)${r.errors.length ? ' ERRORS ' + r.errors.join('; ') : ''}`);
+    console.log(`${char.padEnd(9)} wave ${String(r.wave).padStart(2)} ${String(r.t).padStart(4)}s kills ${String(r.kills).padStart(6)} lv ${r.level} peak ${r.peak}${r.victory ? ' VICTORY' : ''} | ${r.weapons} | ${r.passives} | top ${top} | fused ${JSON.stringify(r.fusedAt)} | bosses ${r.bosses || '-'} | last 12s hurt by ${r.killer || '-'} (${((Date.now() - t0) / 1000).toFixed(0)}s)${r.errors.length ? ' ERRORS ' + r.errors.join('; ') : ''}`);
   }
 }
 await Promise.all(Array.from({ length: Math.min(workers, jobs.length) }, worker));
@@ -312,6 +363,12 @@ for (const [k, s] of Object.entries(share).sort((a, b) => b[1].sum - a[1].sum)) 
 const fusions = {};
 for (const r of results) for (const [k, t] of Object.entries(r.fusedAt)) (fusions[k] ||= []).push(t);
 console.log('\nfusions: ' + (Object.entries(fusions).map(([k, ts]) => `${k} x${ts.length} (median ${median(ts)}s)`).join(', ') || 'none'));
+const taken = {};
+for (const r of results) if (!r.victory) for (const k of (r.killer || '').split(' ').filter(Boolean)) {
+  const [c, v] = k.split(':').length === 3 ? [k.split(':').slice(0, 2).join(':'), k.split(':')[2]] : k.split(':');
+  taken[c] = (taken[c] || 0) + Number(v);
+}
+console.log('\nwhat hurt runs in their last 12s: ' + Object.entries(taken).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', '));
 const errs = results.flatMap((r) => r.errors);
 if (errs.length) console.log('\npage errors:\n' + [...new Set(errs)].join('\n'));
 if (jsonOut) writeFileSync(jsonOut, JSON.stringify(results, null, 1));
