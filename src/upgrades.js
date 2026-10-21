@@ -2,8 +2,9 @@ import { G, ULT_COST, pick } from './core.js';
 import { CHARS } from './player.js';
 import { WEAPONS, FUSIONS, MAX_LEVEL, MAX_WEAPONS, addWeapon, fusionOptions, fuse, weaponInfo } from './weapons.js';
 import { upgradeLevel } from './save.js';
-import { banner, burst } from './fx.js';
+import { banner, burst, floater } from './fx.js';
 import { sfx } from './audio.js';
+import { renderLoadout } from './ui.js';
 
 // ---------- in-run trinkets ----------
 export const PASSIVES = {
@@ -44,7 +45,7 @@ export function computeStats() {
     amount: 0,
     speed: c.speed * (1 + 0.04 * u('spd')),
     magnet: 1 + (c.mods.magnet || 0) + 0.1 * u('mag'),
-    regen: 0,
+    regen: c.mods.regen || 0,
     armor: 0,
     crit: 0.05 + 0.02 * u('luck'),
     luck: 1 + 0.1 * u('luck'),
@@ -96,10 +97,11 @@ export function rollOptions() {
     for (; idx < pool.length - 1; idx++) if ((r -= pool[idx].w) <= 0) break;
     opts.push(pool.splice(idx, 1)[0]);
   }
-  if (!opts.length) {
-    opts.push({ kind: 'heal' }, { kind: 'gold' });
-  }
-  return opts.slice(0, Math.max(want, opts.filter((o) => o.kind === 'fusion').length));
+  // everything maxed (or nearly): pad with snacks so there's always a real choice
+  if (opts.length < 2) opts.push({ kind: 'heal' });
+  if (opts.length < 2) opts.push({ kind: 'gold' });
+  G.lastOptions = opts.slice(0, Math.max(want, opts.filter((o) => o.kind === 'fusion').length));
+  return G.lastOptions;
 }
 
 export function describe(o) {
@@ -150,22 +152,45 @@ export function openChest() {
   if (f) {
     fuse(f);
     computeStats();
+    renderLoadout();
     return;
   }
   const got = [];
-  for (let i = 0; i < 3; i++) {
-    const ups = G.weapons.filter((w) => !w.fused && w.level < MAX_LEVEL);
-    if (ups.length) {
-      const w = pick(ups);
-      w.level++;
-      got.push(`${weaponInfo(w.id).emoji} Lv${w.level}`);
-    } else {
-      G.goldThisRun += 2;
-      got.push('🥕 +2');
-    }
-  }
+  for (let i = 0; i < 3; i++) got.push(freeLevel(2));
   G.goldThisRun += 5;
   computeStats();
+  renderLoadout();
   banner('TREASURE CHEST!', got.join('  ·  ') + '  ·  🥕 +5');
   sfx('fanfare');
 }
+
+// One free level: a weapon if any can still grow, else a trinket, else golden carrots.
+function freeLevel(gold) {
+  const ups = G.weapons.filter((w) => !w.fused && w.level < MAX_LEVEL);
+  if (ups.length) {
+    const w = pick(ups);
+    w.level++;
+    return `${weaponInfo(w.id).emoji} Lv${w.level}`;
+  }
+  const ps = G.passives.filter((p) => p.level < PASSIVES[p.id].max);
+  if (ps.length) {
+    const p = pick(ps);
+    p.level++;
+    return `${PASSIVES[p.id].emoji} Lv${p.level}`;
+  }
+  G.goldThisRun += gold;
+  return `🥕 +${gold}`;
+}
+
+// Elite present: a single free level-up and a golden carrot.
+export function openGift() {
+  const p = G.player;
+  const got = freeLevel(2);
+  G.goldThisRun += 1;
+  computeStats();
+  renderLoadout();
+  burst(p.x, 1.5, p.z, 18, [0xc77dff, 0xffe14d, 0xffffff], 6, 0.35, 0.8, 8);
+  floater(`🎁 ${got}`, p.x, 3, p.z, 'gold');
+  sfx('levelup');
+}
+G.openGift = openGift;
