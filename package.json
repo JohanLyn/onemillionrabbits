@@ -1,6 +1,6 @@
 {
   "name": "one-million-rabbits",
-  "version": "1.0.0",
+  "version": "0.9.0-beta",
   "private": true,
   "type": "module",
   "description": "A cel-shaded horde-survival game: survive a million rabbits with ridiculous weapons.",
@@ -8,7 +8,10 @@
     "dev": "vite --host",
     "build": "vite build && node scripts/postbuild.js",
     "preview": "vite preview --host",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "test": "npm run build && node scripts/smoke.mjs && node scripts/smoke.mjs --mobile",
+    "screens": "node scripts/screens.mjs",
+    "icons": "node scripts/make-icons.mjs"
   },
   "dependencies": {
     "three": "0.186.1"

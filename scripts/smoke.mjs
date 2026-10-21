@@ -35,6 +35,11 @@ await page.goto(url);
 await page.waitForFunction(() => window.__omr && window.__omr.G.state === 'menu', null, { timeout: 30000 });
 const tag = mobile ? 'mobile' : 'desktop';
 await page.screenshot({ path: `${out}/${tag}-menu.png` });
+// every menu opens and closes without errors
+for (const [open, back] of [['#settingsBtn', '#settingsBack'], ['#trophyBtn', '#trophies [data-back]'], ['#shopBtn', '#shop [data-back]'], ['#creditsBtn', '#credits [data-back]']]) {
+  await page.locator(open).click();
+  await page.locator(back).click();
+}
 await page.evaluate(() => window.__omr.startRun());
 
 const stats = () =>
@@ -63,6 +68,18 @@ for (let i = 0; i * chunk < seconds; i++) {
 }
 await page.waitForTimeout(400);
 await page.screenshot({ path: `${out}/${tag}-late.png` });
+// pausing and resuming goes through the 3-2-1 countdown back to playing
+const resumed = await page.evaluate(() => {
+  const o = window.__omr;
+  if (o.G.state !== 'playing') o.advance(0.1);
+  document.getElementById('pauseBtn').click();
+  const paused = o.G.state;
+  document.getElementById('resumeBtn').click();
+  const counting = o.G.state;
+  o.advance(2.5);
+  return [paused, counting, o.G.state].join('>');
+});
+if (!/^paused>countdown>(playing|levelup|wheel)$/.test(resumed)) errors.push(`pause/resume went ${resumed}`);
 // end the run and make sure the game-over screen comes up
 await page.evaluate(() => {
   const G = window.__omr.G;
@@ -75,8 +92,22 @@ await page.waitForTimeout(400);
 await page.screenshot({ path: `${out}/${tag}-gameover.png` });
 const final = await stats();
 console.log(JSON.stringify(final));
-await browser.close();
 if (final.state !== 'gameover') errors.push(`expected gameover state, got ${final.state}`);
+// a winning run: G.onVictory() is what the final boss calls
+await page.locator('#retryBtn').click();
+const won = await page.evaluate(() => {
+  const o = window.__omr;
+  o.G.player.invuln = 1e9;
+  o.advance(1);
+  o.win();
+  o.advance(3);
+  return { state: o.G.state, screen: !document.getElementById('victory').hidden, victories: o.save.victories };
+});
+await page.waitForTimeout(400);
+await page.screenshot({ path: `${out}/${tag}-victory.png` });
+console.log(JSON.stringify(won));
+if (won.state !== 'victory' || !won.screen || won.victories !== 1) errors.push(`victory flow failed: ${JSON.stringify(won)}`);
+await browser.close();
 if (errors.length) {
   console.error(`\n${errors.length} error(s):\n` + [...new Set(errors)].join('\n'));
   process.exit(1);
