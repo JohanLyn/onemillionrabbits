@@ -22,9 +22,25 @@ The first public beta. Install it on your phone, play it offline, and [tell us w
 - **Phones**: the touch joystick has a dead zone and reaches full speed sooner; survivors scroll sideways on narrow screens; the pause button no longer covers the wave info or boss bar; landscape layouts fit the level-up cards, the wheel and the game-over screen; buttons are thumb-sized; pinch and double-tap zoom are blocked.
 - Level-up cards ignore taps for a moment after they appear, so a thumb that was steering doesn't pick one by accident.
 
-<!-- TODO(lead): new rabbits, bosses and weapons from the content work. -->
-<!-- TODO(lead): new visual effects from the visuals work. -->
-<!-- TODO(lead): new sounds and music from the audio work. -->
+### More rabbits, bosses and weapons
+
+- **Carrot Archers**, **Burrowers** and glowing **Elites** that drop a free level-up.
+- **Three boss patterns** (slammer, carrot spinner, egg-laying brood mother) that each turn FURIOUS at half health, and **the Rabbit Queen** on wave 30.
+- **Four new weapons**: Garden Gnome Sentries, Kazoo of Confusion, Spaghetti Lasso and Shopping Cart. **Two new fusions**: Gnome Kazoo Choir and Meatball Express.
+- **Rebalanced** the 30-wave curve with a bot that plays real runs. The Carrot Strike no longer does half of all damage, fusions are a real power spike, and every survivor can win.
+- Fixes: rabbits slide around trees instead of getting stuck, loot never lands outside the fence, cake waits on the grass until you're hurt, and bees stop chasing rabbits that already died.
+
+### Prettier
+
+- A sky with clouds, a sun and a moon, and a **day-to-night cycle** across the waves: golden hour, sunset, starry nights with fireflies, then dawn.
+- Butterflies, drifting petals, a pond, wind in the grass and trees, and a dance floor for Disco Inferno.
+- Juicier hits: KO stars, smoke puffs, fireball flashes, landing dust, a level-up light pillar and sparkles for gold.
+- Survivors lean, bounce, breathe and carry their signature item; the camera eases out when the horde gets huge.
+
+### Better sound
+
+- An adaptive soundtrack: menu theme, a full in-run song that builds with the waves, a boss march, a disco variant, stingers for waves, bosses, defeat and victory, and a heartbeat when you're low on health.
+- Every sound effect has variants (yes, rabbits occasionally go "eep!"), plus a new kazoo honk and burrower digging. A voice limiter keeps 500 rabbit pops from clipping.
 
 ### Behind the scenes
 

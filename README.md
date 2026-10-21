@@ -68,7 +68,7 @@ From the title screen (⚙️) or the pause menu:
 
 Beat the final boss on **wave 30** to save the meadow. A win pays a big golden-carrot bonus (bigger the first time with each survivor) and puts a 🏆 on that survivor's card.
 
-<!-- TODO(lead): describe the final boss and the wave 30 finale once the content work is merged. -->
+The finale is **The Rabbit Queen**: a giant crowned rabbit with a purple cape and a golden-carrot sceptre. She has three phases (at 66% and 33% health) that mix every boss attack, she summons royal guards (elites included) and lays eggs. Wave 30 doesn't end until she falls. Every attack is telegraphed: orange discs show where carrots land, red circles show where she'll slam.
 
 ---
 
@@ -96,9 +96,9 @@ Beat the final boss on **wave 30** to save the meadow. A win pays a big golden-c
 | Genre feature | In One Million Rabbits |
 |---|---|
 | Endless horde | Hundreds of rabbits on screen; a live **"1,000,000 rabbits to go"** counter |
-| Waves + bosses | 40-second waves; a royal boss rabbit every 5th wave (leaps, slams, summons babies) |
+| Waves + bosses | 40-second waves; a boss every 5th wave (three rotating patterns, each turns FURIOUS at half health) and the Rabbit Queen on wave 30 |
 | Horde events | "They surrounded you" rings and hare stampedes |
-| Auto weapons + level-ups | 10 ridiculous weapons, 10 trinkets, pick 1 of 3 cards, rerolls |
+| Auto weapons + level-ups | 14 ridiculous weapons, 10 trinkets, pick 1 of 3 cards, rerolls |
 | Evolutions | **Fusions** (see below) |
 | Ultimate | **Orbital Carrot Strike**, charged by defeating rabbits |
 | Classes + meta currency | 5 survivors unlocked with golden carrots; **The Shed** sells permanent upgrades |
@@ -126,8 +126,10 @@ Beat the final boss on **wave 30** to save the meadow. A win pays a big golden-c
 | 🩴 Grandma's Slipper | A colossal slipper falls from the heavens |
 | 🪠 Thunder Plunger | 10,000 volt bonk that chains between rabbits |
 | 🍌 Banana Peels | Rabbits slip, spin and go flying |
-
-<!-- TODO(lead): add the new beta weapons (and any new fusions below) from the content work. -->
+| 🧙 Garden Gnome Sentries | Plants gnomes that pelt rabbits with homing acorns |
+| 🎺 Kazoo of Confusion | A dreadful honk: dizzy rabbits walk backwards and take extra damage |
+| 🍝 Spaghetti Lasso | Ropes a rabbit with a noodle, swings it into its friends, then flings it |
+| 🛒 Shopping Cart | A leaf-blower-powered cart with no brakes that plows through the horde |
 
 | Fusion | Recipe |
 |---|---|
@@ -136,10 +138,16 @@ Beat the final boss on **wave 30** to save the meadow. A win pays a big golden-c
 | 🐣 Chicken Swarm | Rubber Chicken + Jar of Angry Bees |
 | ⚡ Funkadelic Storm | Disco Ball Drone + Thunder Plunger |
 | 🎉 Banana Bagpipe Rave | Bagpipes of Doom + Banana Peels |
+| 🎶 Gnome Kazoo Choir | Garden Gnome Sentries + Kazoo of Confusion |
+| 🚂 Meatball Express | Spaghetti Lasso + Shopping Cart |
 
-**Rabbits:** Bunnies, speedy Hares, tanky Chonks, charging Jackalopes, Kamikaze Bomb Bunnies (their explosions chain-react through the horde) and rare Golden Bunnies.
+**Rabbits:** Bunnies, speedy Hares, tanky Chonks, charging Jackalopes, Kamikaze Bomb Bunnies (their explosions chain-react through the horde) and rare Golden Bunnies, plus:
 
-<!-- TODO(lead): add the new beta rabbits and bosses from the content work. -->
+- **Carrot Archers** (wave 4+) keep their distance and lob carrots at you. Watch for the orange landing disc.
+- **Burrowers** (wave 8+) dig under the meadow and burst out next to you after a shaking dirt mound.
+- **Elites** (wave 6+) are glowing, oversized versions of any rabbit. They drop a present worth a free level-up.
+
+**Bosses:** Big Bun-style slammers that leap and shake the ground, Colonel Carrots with spiral carrot barrages, and Mother Fluffington, who lays eggs that hatch unless you smash them. All three get angrier at half health. Then the Rabbit Queen.
 
 **Survivors:** The Gardener (free), The Chef, DJ Fluffkiller, The Space Monk and Grandma. Each has a different starting weapon and perk.
 
@@ -152,22 +160,29 @@ Beat the final boss on **wave 30** to save the meadow. A win pays a big golden-c
 - **No asset files**: every model is built from merged primitives with vertex colors, and every sound and the music loop are synthesized with WebAudio.
 - **Offline and installable**: a web manifest, icons and a small service worker sit next to the single HTML file. The service worker loads the game network-first, so testers get new builds as soon as they're online, and it only registers on http(s) (a double-clicked `docs/index.html` works without it).
 
-<!-- TODO(lead): describe the new visual effects and audio from the visuals and audio work. -->
+- **Time of day**: a gradient sky dome with cartoon clouds, a sun and a moon. Waves move from morning through golden hour and sunset to a starry night with fireflies, glowing mushrooms and a lit barn window, then round to dawn. Grass and treetops sway in the wind, and there's a pond with ripples and lily pads.
+- **Adaptive music**: a farmyard-swing menu theme, an in-run track with verses, choruses and a breakdown that adds layers as the waves and horde grow, a minor-key boss march, a disco groove for Disco Inferno, and muffled music while paused. Sound effects come in several variants each and a voice limiter keeps big hordes from turning into noise.
 
 ```
 src/
   main.js      boot, state machine, game loop, level-ups, death and victory
-  enemies.js   rabbit AI, breeding, spatial grid, wave director, bosses
-  weapons.js   the 10 weapons, 5 fusions and the Orbital Carrot Strike
+  enemies.js   rabbit AI, breeding, spatial grid, wave director, bosses, the Queen
+  weapons.js   the 14 weapons, 7 fusions and the Orbital Carrot Strike
   upgrades.js  trinkets, level-up cards, stats, The Shed
   chaos.js     the Wheel of Chaos
   player.js    survivors and movement
   pickups.js   carrots, cake, magnets, golden carrots, chests
-  world.js     the meadow, scenery and collisions
+  world.js     the meadow, scenery, time of day and collisions
+  sky.js       sky dome, sun, moon, stars and clouds
+  ambient.js   butterflies, petals and fireflies
   fx.js        particles, beams, shockwaves, floating numbers
   toon.js      cel-shading materials, outlines, instancing helpers
-  models.js    every model, built from primitives
-  audio.js     synthesized sound effects and music
+  models.js    survivors, weapons, scenery and stock rabbits, built from primitives
+  models-extra.js  archers, burrowers, bosses, the Queen and the newer weapons
+  audio.js     audio engine: mixing, voice limiter, track and stinger logic
+  music.js     the songs, written as scale steps
+  sounds.js    sound effect and instrument recipes
+  dsp.js       oscillators, filters and offline rendering
   camera.js    camera rig and screen shake
   input.js     keyboard + touch joystick
   ui.js        HUD, menus, toasts, keyboard menu navigation
@@ -177,7 +192,7 @@ src/
   save.js      progress and settings in localStorage
   pwa.js       install prompt, service worker, fullscreen
 public/        web manifest, icons, service worker (copied next to index.html)
-scripts/       postbuild, smoke test, screenshot tour, icon renderer
+scripts/       postbuild, smoke test, screenshot tour, balance bot, icon renderer
 ```
 
 Progress (golden carrots, unlocks, trophies, best runs, settings) is saved in your browser's `localStorage`.
@@ -193,6 +208,7 @@ Progress (golden carrots, unlocks, trophies, best runs, settings) is saved in yo
 | `npm test` | Build, then the headless smoke test on a laptop and a phone viewport |
 | `npm run smoke -- [--mobile] [--seconds 180] [--out shots]` | Fast-forwards a full run in headless Chromium and fails on any page error |
 | `npm run screens -- [--only 390x844]` | Screenshots every menu at 1280×760, 390×844, 844×390 and 360×640 into `shots/screens/` |
+| `npm run balance -- [--runs 3] [--chars gardener] [--shed none\|mid\|max] [--mobile]` | A bot plays real runs (no cheats) and reports how far each survivor gets and which weapons do the damage |
 | `npm run icons` | Re-renders the PNG app icons from `public/icons/icon.svg` |
 
 The smoke tests drive the game through `window.__omr` (`startRun`, `advance(seconds)`, `give(id, level)`, `levelUp`, `ult`, `win`, `G`, `E`, `save`), because headless Chromium only renders a few frames per second.

@@ -373,7 +373,8 @@ export function damage(e, amount, src, kx = 0, kz = 0, opts = {}) {
     e.kz += kz * knockMul;
   }
   if (opts.launch && !e.isBoss && e.type !== 'egg') launch(e, opts.launch);
-  if ((crit && amt >= 15) || amt >= 40 || Math.random() < 0.05) floater(Math.round(amt) + (crit ? '!' : ''), e.x, 1.6 * e.scale + 0.5, e.z, crit ? 'crit' : '');
+  // numbers are seasoning: show big crits and huge hits, plus the odd one so you see damage at all
+  if ((crit && amt >= 30) || amt >= 120 || Math.random() < 0.025) floater(Math.round(amt) + (crit ? '!' : ''), e.x, 1.6 * e.scale + 0.5, e.z, crit ? 'crit' : '');
   if (e.hp <= 0) kill(e);
   return amt;
 }
