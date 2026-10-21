@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full-bleed so it also works as a maskable icon: everything important sits inside the central 80% circle. -->
+  <rect width="512" height="512" fill="#8fd3ff"/>
+  <circle cx="256" cy="210" r="250" fill="#b8e6ff"/>
+  <ellipse cx="256" cy="590" rx="440" ry="215" fill="#5cc44a" stroke="#2b1d3a" stroke-width="12"/>
+  <g stroke="#2b1d3a" stroke-width="13" stroke-linejoin="round" stroke-linecap="round" transform="translate(256 270) scale(0.86) translate(-256 -270)">
+    <!-- ears -->
+    <g transform="rotate(-14 205 175)">
+      <ellipse cx="205" cy="160" rx="44" ry="112" fill="#fffdf7"/>
+      <ellipse cx="205" cy="168" rx="18" ry="74" fill="#ff9cc4" stroke="none"/>
+    </g>
+    <g transform="rotate(16 310 175)">
+      <ellipse cx="310" cy="160" rx="44" ry="112" fill="#fffdf7"/>
+      <ellipse cx="310" cy="168" rx="18" ry="74" fill="#ff9cc4" stroke="none"/>
+    </g>
+    <!-- head -->
+    <ellipse cx="256" cy="318" rx="132" ry="114" fill="#fffdf7"/>
+    <!-- cheeks -->
+    <circle cx="178" cy="350" r="22" fill="#ffc2d9" stroke="none"/>
+    <circle cx="334" cy="350" r="22" fill="#ffc2d9" stroke="none"/>
+    <!-- eyes with grumpy brows: these rabbits mean business -->
+    <ellipse cx="208" cy="306" rx="16" ry="21" fill="#2b1d3a" stroke="none"/>
+    <ellipse cx="304" cy="306" rx="16" ry="21" fill="#2b1d3a" stroke="none"/>
+    <circle cx="213" cy="299" r="6" fill="#fff" stroke="none"/>
+    <circle cx="309" cy="299" r="6" fill="#fff" stroke="none"/>
+    <path d="M178 266 L232 282" fill="none"/>
+    <path d="M334 266 L280 282" fill="none"/>
+    <!-- nose, mouth, buck teeth -->
+    <path d="M241 336 h30 l-15 16 z" fill="#ff6fa8" stroke-width="8"/>
+    <path d="M256 352 v10 M226 364 q15 14 30 -2 q15 16 30 2" fill="none" stroke-width="9"/>
+    <rect x="243" y="368" width="26" height="28" rx="5" fill="#fff" stroke-width="8"/>
+    <path d="M256 368 v28" stroke-width="5"/>
+  </g>
+  <!-- a carrot, for scale and for menace -->
+  <g transform="translate(382 384) rotate(35)" stroke="#2b1d3a" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M-12 -40 q-14 -26 -4 -38 M0 -40 q2 -30 14 -36 M8 -38 q16 -18 30 -16" fill="none" stroke="#2b1d3a"/>
+    <path d="M-12 -40 q-14 -26 -4 -38 M0 -40 q2 -30 14 -36 M8 -38 q16 -18 30 -16" fill="none" stroke="#4caf50" stroke-width="5"/>
+    <path d="M-26 -40 h52 l-26 104 z" fill="#ff8a1f"/>
+  </g>
+</svg>
