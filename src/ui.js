@@ -153,8 +153,9 @@ export function updateHud() {
   }
   const b = G.boss;
   const bossOn = !!(b && b.alive);
-  if (last.bossOn !== bossOn) {
-    last.bossOn = bossOn;
+  const who = bossOn ? b : null;
+  if (last.boss !== who) {
+    last.boss = who;
     $('bossbar').hidden = !bossOn;
     if (bossOn) $('bossName').textContent = b.name;
   }

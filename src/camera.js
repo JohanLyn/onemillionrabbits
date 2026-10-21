@@ -50,10 +50,10 @@ function applyZoom() {
 
 export function updateCamera(realDt) {
   const cam = G.camera, p = G.player;
-  if (G.state === 'menu' || G.state === 'gameover') {
+  if (G.state === 'menu' || G.state === 'gameover' || G.state === 'victory') {
     // low, slow orbit with the horizon in the top of the frame
     orbitA += realDt * 0.08;
-    const over = G.state === 'gameover';
+    const over = G.state !== 'menu';
     const r = camDist * (over ? 0.75 : 0.8);
     const cx = over ? p.x : 0, cz = over ? p.z : 0;
     camPos.set(cx + Math.sin(orbitA) * r, r * (over ? 0.36 : 0.3), cz + Math.cos(orbitA) * r);

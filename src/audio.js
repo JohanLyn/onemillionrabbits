@@ -425,7 +425,7 @@ const inRun = (s) => s === 'playing' || s === 'levelup' || s === 'wheel' || s ==
 
 function wanted(st, now) {
   if (stopped || st === 'dying') return null;
-  if (st === 'gameover') return now < quietUntil ? null : 'menu';
+  if (st === 'gameover' || st === 'victory') return now < quietUntil ? null : 'menu';
   if (!inRun(st)) return 'menu';
   return G.boss || music.boss ? 'boss' : 'main';
 }

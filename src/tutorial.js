@@ -33,7 +33,6 @@ function seen(id) {
 export function tip(id) {
   if (!allowed(id) || queue.includes(id) || cur === id) return false;
   queue.push(id);
-  seen(id);
   return true;
 }
 
@@ -53,6 +52,7 @@ function showNext() {
     box.hidden = true;
     return;
   }
+  seen(cur);
   const t = TIPS[cur];
   $('coachEm').textContent = t.em;
   $('coachText').innerHTML = copy(t);

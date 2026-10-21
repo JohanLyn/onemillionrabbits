@@ -7,7 +7,7 @@ import { rabbitGeo } from './models.js';
 
 const INK = 0x2b1d3a;
 const dome = (r, w, h) => new THREE.SphereGeometry(r, w, h, 0, Math.PI * 2, 0, Math.PI / 2);
-const _c = new THREE.Color(), _t = new THREE.Color();
+const _c = new THREE.Color();
 
 // Repaint baked vertex colors: { fromHex: toHex }.
 function recolor(geo, map) {

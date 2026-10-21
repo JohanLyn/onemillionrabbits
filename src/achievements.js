@@ -54,7 +54,7 @@ export function checkAchievements() {
 }
 
 // ---------- watching the game for events (other systems don't announce them) ----------
-let bossRef = null, lastHp = 0, lastBorn = 0, ultWasReady = false, lastFused = 0;
+let bossRef = null, lastHp = 0, lastBorn = 0, ultWasReady = false, lastFused = 0, lastCaught = 0;
 const goldens = new Set();
 
 export function resetRunTracking() {
@@ -63,6 +63,7 @@ export function resetRunTracking() {
   run.lowAt = null;
   run.unlocked = [];
   bossRef = null;
+  lastCaught = 0;
   goldens.clear();
   lastHp = G.player.hp;
   lastBorn = 0;
@@ -84,14 +85,16 @@ export function observe() {
   lastBorn = G.born;
 
   const b = G.boss;
-  if (b && b.alive && b !== bossRef) {
-    bossRef = b;
-    ev.push('boss');
-  } else if (bossRef && !bossRef.alive) {
+  // a queued boss can arrive in the same tick the last one died, so count the dead one first
+  if (bossRef && !bossRef.alive) {
     bossRef = null;
     run.bosses++;
     save.life.bosses++;
     ev.push('bossdown');
+  }
+  if (b && b.alive && b !== bossRef) {
+    bossRef = b;
+    ev.push('boss');
   }
 
   // golden bunnies: remember them while alive, and tell a catch (killed) from an escape (timer ran out)
@@ -103,14 +106,14 @@ export function observe() {
       }
     }
   }
-  for (const e of goldens) {
-    if (e.alive && e.type === 'golden') continue;
-    goldens.delete(e);
-    if (!e.alive && e.type === 'golden' && e.life > 0) {
-      run.goldens++;
-      save.life.goldens++;
-      ev.push('caught');
-    }
+  for (const e of goldens) if (!e.alive || e.type !== 'golden') goldens.delete(e);
+  const caught = G.goldenCaught || 0;
+  if (caught < lastCaught) lastCaught = 0; // a new run started
+  while (lastCaught < caught) {
+    lastCaught++;
+    run.goldens++;
+    save.life.goldens++;
+    ev.push('caught');
   }
 
   const ready = G.ultCharge >= G.stats.ultCost;

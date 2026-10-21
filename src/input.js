@@ -17,7 +17,7 @@ export function initInput(canvas) {
   addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
     keys.add(k);
-    if (k === ' ' || k === 'e' || k === 'q') input.ult = true;
+    if ((k === ' ' || k === 'e' || k === 'q') && G.state === 'playing') input.ult = true;
     if (k === 'escape' || k === 'p') input.pause = true;
     // stop arrows and space from scrolling the page mid-run, but leave menus (sliders, buttons) alone
     const menu = G.state === 'menu' || G.state === 'paused' || G.state === 'gameover' || G.state === 'victory';

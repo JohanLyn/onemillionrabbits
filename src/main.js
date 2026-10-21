@@ -175,6 +175,7 @@ function buy(id) {
 // ---------- flow ----------
 function resetRun() {
   clearEnemies();
+  G.goldenCaught = 0;
   clearPickups();
   clearWeapons();
   clearFx();
@@ -217,6 +218,7 @@ function toMenu() {
 }
 
 function startRun() {
+  runId++;
   initAudio();
   startMusic();
   resetRun();
@@ -258,12 +260,13 @@ function nextWave() {
     if (G.wave % 5 === 0) spawnBoss();
     else {
       banner(`WAVE ${G.wave}`, `${mod.emoji} ${mod.name}`);
-      if (G.wave >= 3 && Math.random() < 0.6) setTimeout(() => G.state === 'playing' && hordeEvent(), 2600);
+      const id = runId;
+      if (G.wave >= 3 && Math.random() < 0.6) setTimeout(() => id === runId && G.state === 'playing' && hordeEvent(), 2600);
     }
   });
 }
 
-let currentOpts = null;
+let currentOpts = null, runId = 0;
 function openLevelUp() {
   G.state = 'levelup';
   resetJoystick();
@@ -337,7 +340,7 @@ function onVictory() {
   G.player.invuln = 1e9;
   resetJoystick();
   clearTips();
-  banner('VICTORY!', 'the meadow is yours');
+  banner(G.remaining <= 0 ? 'ONE MILLION RABBITS!' : 'THE QUEEN HAS FALLEN!', 'the meadow is yours');
   sfx('fanfare');
   vibrate([60, 40, 60, 40, 160]);
 }
@@ -413,7 +416,10 @@ addEventListener('keydown', (e) => {
   else if (G.state === 'paused' && k === 'p' && !$('pause').hidden) {
     input.pause = false;
     resume();
-  } else if (G.state === 'wheel' && (k === ' ' || k === 'enter')) skipWheel();
+  } else if (G.state === 'wheel' && (k === ' ' || k === 'enter')) {
+    skipWheel();
+    input.ult = false;
+  }
   else if (k === 'enter' && !onControl && ((G.state === 'menu' && !$('menu').hidden) || G.state === 'gameover' || G.state === 'victory')) startRun();
 });
 document.addEventListener('visibilitychange', () => {
@@ -453,15 +459,18 @@ function tick(realDt) {
     p.update(dt);
     director(dt);
     updateEnemies(dt);
-    updateWeapons(dt);
-    updatePickups(dt);
+    if (G.state === 'playing') updateWeapons(dt);
+    if (G.state === 'playing') updatePickups(dt);
     G.hurtFlash -= realDt;
     G.bornFlash -= realDt;
     watch(realDt);
-    if (G.remaining <= 0) onVictory();
+    if (G.remaining <= 0 && G.state === 'playing') onVictory();
     if (G.waveTime >= WAVE_LEN && G.state === 'playing') nextWave();
     if (G.pendingLevels > 0 && G.state === 'playing') openLevelUp();
   } else if (G.state === 'countdown') {
+    readInput();
+    if (input.pause) pause();
+    input.ult = input.pause = false;
     countT -= realDt;
     if (countT <= 0) {
       G.state = 'playing';

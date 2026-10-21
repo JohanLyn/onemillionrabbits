@@ -404,6 +404,7 @@ function kill(e) {
   if (roll < 0.004) dropPickup('cake', e.x, e.z);
   else if (roll < 0.0055) dropPickup('magnet', e.x, e.z);
   if (e.type === 'golden') {
+    G.goldenCaught = (G.goldenCaught || 0) + 1;
     const n = 4 + Math.floor(Math.random() * 4);
     for (let i = 0; i < n; i++) dropPickup('gold', e.x + rand(-1.5, 1.5), e.z + rand(-1.5, 1.5));
     burst(e.x, 1, e.z, 20, [0xffc83d, 0xffffff], 7, 0.35, 0.8, 8);
@@ -1359,18 +1360,21 @@ function killBoss(b) {
     for (const e of E) if (e.alive && e.type === 'egg') e.alive = false;
     shots.length = 0;
   }
-  const x = clamp(b.x, -WORLD + 2, WORLD - 2), z = clamp(b.z, -WORLD + 2, WORLD - 2);
-  dropPickup('chest', x, z);
-  for (let i = 0; i < (b.kind === 'queen' ? 30 : 8); i++) dropPickup('gold', x + rand(-3, 3), z + rand(-3, 3));
-  dropXp(x, z, 120);
   sfx('fanfare');
   if (b.kind === 'queen') {
+    if (G.state !== 'playing') return; // she fell to your last bomb chain, but so did you
+    G.goldThisRun += 30;
     G.victory = true;
-    banner('THE QUEEN HAS FALLEN!', 'the meadow is yours');
     G.shake = 1.2;
     for (let i = 0; i < 3; i++) ring(b.x, b.z, 1, 10 + i * 6, 0.8 + i * 0.2, [0xffc83d, 0xff6fa8, 0x47e5ff][i], 1);
     G.onVictory?.();
-  } else banner(`${b.name} IS DOWN!`, 'grab the treasure chest');
+    return;
+  }
+  const x = clamp(b.x, -WORLD + 2, WORLD - 2), z = clamp(b.z, -WORLD + 2, WORLD - 2);
+  dropPickup('chest', x, z);
+  for (let i = 0; i < 8; i++) dropPickup('gold', x + rand(-3, 3), z + rand(-3, 3));
+  dropXp(x, z, 120);
+  banner(`${b.name} IS DOWN!`, 'grab the treasure chest');
 }
 
 export const enemyCount = () => E.length;

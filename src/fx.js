@@ -70,7 +70,7 @@ export function initFx() {
 
   const ringGeo = new THREE.RingGeometry(0.86, 1, 48).rotateX(-Math.PI / 2);
   const discGeo = new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2);
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 100; i++) {
     const disc = i >= 30;
     const m = new THREE.Mesh(disc ? discGeo : ringGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false }));
     m.visible = false;
@@ -281,6 +281,14 @@ export function ring(x, z, r0, r1, life, color, opacity = 0.8, disc = false) {
   return null;
 }
 export const telegraph = (x, z, r, life, color = 0xff3355) => ring(x, z, r * 0.2, r, life, color, 0.35, true);
+// Target markers for the player's own weapons. They skip drawing rather than take the last
+// free discs, so an enemy attack always gets its warning.
+const RESERVED_DISCS = 24;
+export function markTarget(x, z, r, life, color) {
+  let free = 0;
+  for (const f of flats) if (f.disc && f.life <= 0 && ++free > RESERVED_DISCS) return telegraph(x, z, r, life, color);
+  return null;
+}
 
 export function floater(text, x, y, z, cls = '') {
   // the "damage numbers" setting hides plain and crit numbers, never heal/gold/love text

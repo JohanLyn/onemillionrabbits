@@ -5,7 +5,7 @@ import { toastGeo, chickenGeo, beeGeo, slipperGeo, bananaGeo, sabreHiltGeo, plun
 import { gnomeGeo, acornGeo, kazooGeo, noodleGeo, cartGeo } from './models-extra.js';
 import { queryCircle, nearest, randomNear, nearestGrabbable, damage } from './enemies.js';
 import { blocked } from './world.js';
-import { burst, particle, poof, explosion, ring, telegraph, beam, lightning, floater, banner } from './fx.js';
+import { burst, particle, poof, explosion, ring, markTarget, beam, lightning, floater, banner } from './fx.js';
 import { sfx } from './audio.js';
 
 // ======================================================================
@@ -556,7 +556,7 @@ class Slipper extends Weapon {
       any = true;
       const T = this.meteor ? 0.9 : 0.6;
       this.items.push({ x: e.x, z: e.z, t: -i * 0.15, T, R, landed: false, stay: 0.4, rot: rand(0, 6) });
-      telegraph(e.x, e.z, R, T + i * 0.15, this.meteor ? 0xff6a00 : 0xff3355);
+      markTarget(e.x, e.z, R, T + i * 0.15, this.meteor ? 0xff6a00 : 0xff3355);
     }
     return any ? undefined : false;
   }
@@ -1236,7 +1236,7 @@ export function fireUltimate() {
     const z = e ? e.z + rand(-1, 1) : p.z + rand(-G.viewR, G.viewR) * 0.6;
     const delay = i * 0.055;
     ults.push({ x, z, t: -delay, T: 0.7, dmg });
-    telegraph(x, z, 3.8, 0.7 + delay, 0xff8a1f);
+    markTarget(x, z, 3.8, 0.7 + delay, 0xff8a1f);
   }
   banner('ORBITAL CARROT STRIKE', 'incoming!');
   G.shake = 0.5;
