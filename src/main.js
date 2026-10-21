@@ -331,6 +331,7 @@ let dyingT = 0, won = false, quitRun = false, countT = 0, goT = 0, goldAtStart =
 function onVictory() {
   if (G.state !== 'playing') return;
   won = true;
+  G.victory = true;
   G.state = 'dying';
   dyingT = 2.4;
   G.player.invuln = 1e9;

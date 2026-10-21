@@ -234,6 +234,8 @@ const DEF = {
   boss: { vol: 0.66, gap: 400, max: 1, prio: 4, duck: 0.45, hold: 1 },
   die: { vol: 0.62, gap: 500, max: 1, prio: 4 },
   sparkle: { vol: 0.14, gap: 200, max: 1, prio: 3 },
+  kazoo: { vol: 0.3, gap: 180, max: 2, prio: 1, rate: [0.97, 1.03], pan: 1 },
+  dig: { vol: 0.3, gap: 160, max: 2, prio: 1, rate: [0.9, 1.1], pan: 1 },
   levelup: { gap: 150, live: liveLevelUp },
   fanfare: { gap: 250, live: liveFanfare },
 };
@@ -288,7 +290,7 @@ export function sfx(name, p = 1) {
   // density: the more often a sound fires, the rarer and quieter each copy, so a horde never piles up
   let h = (heat[name] || 0) * Math.exp(-since / 0.4);
   if (since < (d.gap / 1000) * Math.min(3, 1 + h / 8)) return;
-  if (name === 'die' && G.remaining <= 0) return; // a win gets the victory fanfare instead
+  if (name === 'die' && (G.victory || G.remaining <= 0)) return; // a win gets the victory fanfare instead
   heat[name] = ++h;
   lastT[name] = now;
   if (d.live) return d.live(now);
@@ -419,7 +421,7 @@ export function stinger(name) {
 
 // ---------- music scheduling ----------
 let muffled = false, prevState = null, prevBoss = null;
-const inRun = (s) => s === 'playing' || s === 'levelup' || s === 'wheel' || s === 'paused';
+const inRun = (s) => s === 'playing' || s === 'levelup' || s === 'wheel' || s === 'paused' || s === 'countdown';
 
 function wanted(st, now) {
   if (stopped || st === 'dying') return null;
@@ -438,7 +440,7 @@ const stepDur = () => 60 / (seq.song.bpm * (seq.name !== 'menu' && G.mod?.id ===
 // Read the game state; fire stingers on transitions and decide which track should play.
 function poll(now) {
   const st = G.state;
-  const m = st === 'paused' || st === 'levelup' || st === 'wheel';
+  const m = st === 'paused' || st === 'levelup' || st === 'wheel' || st === 'countdown';
   if (m !== muffled) {
     muffled = m;
     ramp(muffle.frequency, m ? 650 : 18000, m ? 0.08 : 0.2, now);
@@ -446,7 +448,7 @@ function poll(now) {
   }
   if (st !== prevState) {
     if (prevState === 'wheel' && st === 'playing' && G.wave % 5 !== 0) stinger('wave');
-    if (st === 'dying') stinger(G.remaining <= 0 ? 'victory' : 'gameover');
+    if (st === 'dying') stinger(G.victory || G.remaining <= 0 ? 'victory' : 'gameover');
   }
   if (prevBoss && !G.boss && inRun(st) && inRun(prevState)) stinger('bossDown');
   prevState = st;

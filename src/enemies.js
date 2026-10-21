@@ -4,7 +4,7 @@ import { Inst, vtoon, outlined } from './toon.js';
 import { rabbitGeo, hatGeo } from './models.js';
 import { archerGeo, burrowerGeo, moundGeo, eggGeo, auraGeo, dartGeo, dizzyGeo, spinnerBossGeo, broodBossGeo, queenGeo } from './models-extra.js';
 import { pushOut, blocked } from './world.js';
-import { poof, burst, explosion, floater, heart, telegraph, ring, banner, particle } from './fx.js';
+import { poof, burst, explosion, floater, heart, telegraph, ring, banner, particle, sparkle, dust } from './fx.js';
 import { sfx, music } from './audio.js';
 import { dropXp, dropPickup } from './pickups.js';
 
@@ -579,7 +579,7 @@ function burrowerBrain(e, d, dt) {
       e.state = 'dig';
       e.stateT = 0.45;
       burst(e.x, 0.3, e.z, 8, [0x9c6a3c, 0x7a4f2b], 4, 0.3, 0.5, 4);
-      sfx('slip');
+      sfx('dig');
     }
     return 1;
   }
@@ -690,7 +690,7 @@ export function updateEnemies(dt) {
       dx = -dx + Math.sin(t * 2 + e.id) * 0.5;
       dz = -dz + Math.cos(t * 2 + e.id) * 0.5;
       e.life -= dt;
-      if (Math.random() < dt * 8) burst(e.x, 1, e.z, 1, [0xffe680], 1, 0.2, 0.6, 2);
+      if (Math.random() < dt * 8) sparkle(e.x, 1, e.z, 1);
       if (e.life <= 0) {
         e.alive = false;
         poof(e.x, e.z, 1, 0xffcc33);
@@ -773,7 +773,7 @@ export function updateEnemies(dt) {
         e.y = 0;
         e.air = false;
         e.spin = 0;
-        if (e.vy < -8) burst(e.x, 0.2, e.z, 3, [0xffffff, 0x9be37a], 3, 0.25, 0.35, 2);
+        if (e.vy < -8) dust(e.x, e.z, e.scale, 3);
         e.vy = 0;
       }
     } else {

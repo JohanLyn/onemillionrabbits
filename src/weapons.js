@@ -742,8 +742,7 @@ function honk(x, z, R, dmg, dur, src, rainbow = false) {
     const a = rand(0, 6.28);
     particle(x + Math.cos(a) * 0.8, 1.8, z + Math.sin(a) * 0.8, Math.cos(a) * 5, rand(2, 4), Math.sin(a) * 5, i % 2 ? 0xffe14d : 0xff6fa8, 0.22, 0.6, -4, 1);
   }
-  sfx('squeak');
-  sfx('buzz');
+  sfx('kazoo');
 }
 
 // Acorns fired by garden gnomes. Shared, so gnomes that expire don't take their shots with them.

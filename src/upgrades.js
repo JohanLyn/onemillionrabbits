@@ -2,7 +2,7 @@ import { G, ULT_COST, pick } from './core.js';
 import { CHARS } from './player.js';
 import { WEAPONS, FUSIONS, MAX_LEVEL, MAX_WEAPONS, addWeapon, fusionOptions, fuse, weaponInfo } from './weapons.js';
 import { upgradeLevel } from './save.js';
-import { banner, burst, floater } from './fx.js';
+import { banner, burst, floater, sparkle } from './fx.js';
 import { sfx } from './audio.js';
 import { renderLoadout } from './ui.js';
 
@@ -149,6 +149,7 @@ export function openChest() {
   const f = fusionOptions()[0];
   const p = G.player;
   burst(p.x, 1.5, p.z, 30, [0xffc83d, 0xffffff, 0xff6fa8], 8, 0.4, 1, 10);
+  sparkle(p.x, 1, p.z, 12);
   if (f) {
     fuse(f);
     computeStats();

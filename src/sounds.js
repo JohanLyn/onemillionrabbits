@@ -239,6 +239,39 @@ export const SFX = {
       }));
     },
   },
+  // kazoo of confusion: a nasal, buzzing "waaah" that bends down, in the music's key
+  kazoo: {
+    n: 3,
+    make(v, sr) {
+      const m = [PENTA[0], PENTA[2], PENTA[4]][v] - 12, dur = 0.42;
+      const o = new Osc(sr), lfo = new Osc(sr), nz = noiseOf(171 + v);
+      const f1 = new SVF(sr, 900, 3), f2 = new SVF(sr, 2400, 4);
+      return normalize(render(sr, dur + 0.03, (t) => {
+        const k = t / dur;
+        const f = mtof(m) * (1 + 0.04 * Math.sin(TAU * 6 * t)) * (k < 0.5 ? 1 : Math.pow(0.8, (k - 0.5) * 2));
+        // the membrane rattles: hard-clipped saw plus a dash of noise, through two vowel formants
+        const x = sat(o.saw(f) + 0.15 * nz(), 3) * (0.8 + 0.2 * lfo.pulse(f * 0.5));
+        f1.run(x);
+        f2.run(x);
+        return (f1.bp + f2.bp * 0.7) * hump(t, dur, 0.15);
+      }));
+    },
+  },
+  // burrower diving: a few crunchy shovelfuls of dirt
+  dig: {
+    n: 3,
+    make(v, sr) {
+      const r = rng(181 + v), nz = noiseOf(191 + v), lp = new SVF(sr, 700, 1.2);
+      const grains = [0, 0.09, 0.17, 0.27].map((g) => g + r() * 0.03);
+      return normalize(render(sr, 0.42, (t) => {
+        let env = 0;
+        for (const g of grains) if (t > g) env += dec(t - g, 0.03);
+        lp.set(500 + 900 * Math.min(1, env), 1.2);
+        lp.run(nz());
+        return lp.lp * Math.min(1, env) * 1.4;
+      }));
+    },
+  },
   // love is in the air: a cute two-note "boop-bip"
   heart: {
     n: 3,
