@@ -61,6 +61,7 @@
     <button id="pauseBtn" aria-label="Pause">❚❚</button>
     <div id="joy"><div id="joyKnob"></div></div>
     <div id="floaters"></div>
+    <div id="boothArrow" hidden><span class="ba-em">🎪</span><span class="ba-arrow">➤</span><span id="boothTime" class="ba-t"></span></div>
     <div id="banner"></div>
     <div id="hurt"></div>
     <div id="countdown" aria-live="assertive"></div>
@@ -83,6 +84,7 @@
         <div class="row">
           <button id="shopBtn" class="btn">THE SHED</button>
           <button id="trophyBtn" class="btn">TROPHIES <span id="trophyPill" class="count"></span></button>
+          <button id="arcadeBtn" class="btn">🎪 ARCADE</button>
           <button id="howBtn" class="btn">HOW TO PLAY</button>
         </div>
         <div class="row">
@@ -267,6 +269,35 @@
   </div>
 
   <div id="menuToasts" aria-live="polite"></div>
+  <div id="arcade" class="screen" hidden>
+    <div class="panel wide">
+      <h2>🎪 THE ARCADE</h2>
+      <p class="sub">Five silly games. Each star pays golden carrots the first time you earn it. Arcade booths also pop up in the meadow during a run, with prizes.</p>
+      <div id="arcadeList" class="arcade-list"></div>
+      <button class="btn back" data-back>BACK</button>
+    </div>
+  </div>
+
+  <div id="minigame" class="screen dim mg-screen" hidden>
+    <div class="mg-frame">
+      <div class="mg-top">
+        <span id="mgName" class="mg-name"></span>
+        <span class="mg-score">🏅 <b id="mgScore">0</b></span>
+        <span id="mgTime" class="mg-time"></span>
+        <button id="mgQuit" class="btn small icon mg-quit" aria-label="Leave the minigame">✕</button>
+      </div>
+      <div class="mg-stage">
+        <canvas id="mgCanvas"></canvas>
+        <div id="mgCard" class="mg-card">
+          <div id="mgIntro"></div>
+          <div id="mgResult" hidden></div>
+          <button id="mgStart" class="btn big go">START</button>
+          <button id="mgContinue" class="btn big go" hidden>CONTINUE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="loading" class="screen"><div class="loader">🐇</div></div>
 </div>
 <script type="module" src="./src/main.js"></script>

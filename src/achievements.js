@@ -4,6 +4,7 @@ import { CHARS } from './player.js';
 import { FUSIONS, MAX_WEAPONS } from './weapons.js';
 import { MODS } from './chaos.js';
 import { E } from './enemies.js';
+import { MINIGAMES, arcadeRecord } from './minigames/index.js';
 
 // Per-run facts the achievements need that the game doesn't keep on its own.
 export const run = { bosses: 0, goldens: 0, ults: 0, hurt: false, lowAt: null, unlocked: [], achGold: 0 };
@@ -29,6 +30,9 @@ export const ACHIEVEMENTS = [
   { id: 'untouch', emoji: '🫥', name: 'Untouchable', desc: 'Last 2 minutes without getting hit.', gold: 30, test: () => !run.hurt && G.runTime >= 120 },
   { id: 'whisker', emoji: '😰', name: 'By a Whisker', desc: 'Drop below 10% HP, then survive 30 more seconds.', gold: 15, test: () => run.lowAt !== null && G.runTime - run.lowAt >= 30 },
   { id: 'chaos', emoji: '🎡', name: 'Agent of Chaos', desc: 'Land on every Wheel of Chaos rule.', gold: 40, progress: () => [save.life.mods.length, MODS.length] },
+  { id: 'booth', emoji: '🎪', name: 'Step Right Up', desc: 'Win a prize at an arcade booth during a run.', gold: 15, test: () => (save.life.booths || 0) >= 1 },
+  { id: 'arcade', emoji: '🎟️', name: 'Ticket Collector', desc: 'Play every minigame.', gold: 20, progress: () => [MINIGAMES.filter((m) => arcadeRecord(m.id).plays > 0).length, MINIGAMES.length] },
+  { id: 'arcade3', emoji: '🕹️', name: 'Arcade Legend', desc: 'Get three stars in every minigame.', gold: 100, progress: () => [MINIGAMES.filter((m) => arcadeRecord(m.id).stars >= 3).length, MINIGAMES.length] },
   { id: 'shopper', emoji: '🛠️', name: 'Home Improvement', desc: 'Buy an upgrade in The Shed.', gold: 10, test: () => Object.keys(save.upgrades).length > 0 },
   { id: 'roster', emoji: '👥', name: 'Full Roster', desc: 'Unlock every survivor.', gold: 50, progress: () => [save.unlocked.length, Object.keys(CHARS).length] },
   { id: 'win', emoji: '🏆', name: 'One Million and Done', desc: 'Win a run.', gold: 200, test: () => save.victories >= 1 },

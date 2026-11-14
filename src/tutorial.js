@@ -11,6 +11,7 @@ const TIPS = {
   breed: { em: '💕', text: 'Uh oh. Rabbits left alone <b>make babies</b> and the counter goes <b>UP</b>. Kill fast.' },
   ult: { em: '🛰️', keys: '<b>Carrot Strike</b> is ready! Press <b>SPACE</b> to call it in.', touch: '<b>Carrot Strike</b> is ready! Tap the <b>🥕 button</b> to call it in.' },
   golden: { em: '✨', text: 'A <b>golden bunny</b>! Catch it before it escapes. It drops golden carrots.' },
+  booth: { em: '🎪', text: 'An <b>arcade booth</b>! Walk into it to play a quick <b>minigame</b> for prizes. The horde waits.' },
   boss: { em: '👑', text: 'A <b>boss</b>! Keep moving and stay out of the <b>red circles</b>. It drops a treasure chest.' },
   levelup: { keys: 'Pick one card: click it or press <b>1–4</b>. <b>R</b> rerolls.', touch: 'Tap a card to pick it. Weapons, trinkets and snacks.' },
   fusion: { text: '<b>Golden card!</b> Two maxed weapons can fuse into something dumber. Take it.' },

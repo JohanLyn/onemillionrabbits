@@ -95,7 +95,7 @@ function fit() {
   dpr = d;
   canvas.width = Math.round(W * d);
   canvas.height = Math.round(H * d);
-  cur?.game.resize?.(W, H);
+  cur?.game?.resize?.(W, H);
 }
 
 // Pick the minigame that was played least recently, so a run sees variety.
@@ -266,5 +266,19 @@ function draw() {
     g.globalAlpha = 1 - c.t / 0.6;
     kit.text(g, 'GO!', W / 2, H / 2, Math.min(W, H) * 0.3, kit.C.gold);
     g.globalAlpha = 1;
+  }
+}
+
+// Test hook: drives the open minigame without a player (it scores nothing), then closes it.
+export function minigameAuto(dt) {
+  if (!cur) return;
+  if (cur.phase === 'intro') begin();
+  else if (cur.phase === 'done') close();
+  else {
+    if (cur.phase === 'count') cur.t = COUNT_LEN;
+    cur.autoT = (cur.autoT || 0) + dt;
+    updateMinigame(dt);
+    // a game that waits for an answer would wait forever for nobody
+    if (cur && cur.phase === 'play' && cur.autoT > 60) end();
   }
 }

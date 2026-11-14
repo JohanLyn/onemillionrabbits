@@ -3,7 +3,7 @@ import { G, DIFFICULTIES, rand, pick } from './core.js';
 import { initCamera, resizeCamera, updateCamera } from './camera.js';
 import { initWorld, updateWorld } from './world.js';
 import { initFx, updateFx, clearFx, banner, burst, ring, levelUpFx } from './fx.js';
-import { initEnemies, clearEnemies, updateEnemies, drawEnemies, drawPlayerShadow, director, hordeEvent, spawnBoss, spawnEnemy, queryCircle, damage, E } from './enemies.js';
+import { initEnemies, clearEnemies, updateEnemies, drawEnemies, drawPlayerShadow, director, hordeEvent, spawnBoss, spawnEnemy, queryCircle, damage, E, FINAL_WAVE } from './enemies.js';
 import { initPickups, clearPickups, updatePickups, drawPickups } from './pickups.js';
 import { initWeapons, clearWeapons, updateWeapons, drawWeapons, addWeapon, fireUltimate } from './weapons.js';
 import { Player, CHARS } from './player.js';
@@ -16,6 +16,8 @@ import { checkAchievements, observe, resetRunTracking, run, sawMod, firedUlt, se
 import { tip, inlineTip, updateTips, clearTips, dismissTip, skipTips } from './tutorial.js';
 import { applySettings, bindSettings, renderSettings, vibrate } from './settings.js';
 import { initPwa, whenInstallable, promptInstall, canFullscreen, toggleFullscreen } from './pwa.js';
+import { initMinigames, openMinigame, updateMinigame, minigameAuto } from './minigames/index.js';
+import { initBooth, spawnBooth, updateBooth, drawBooth, clearBooth } from './minigames/booth.js';
 import * as UI from './ui.js';
 
 const WAVE_LEN = 40;
@@ -68,6 +70,8 @@ initFx();
 initEnemies();
 initPickups();
 initWeapons();
+initBooth();
+initMinigames();
 G.player = new Player();
 computeStats();
 initInput(canvas);
@@ -130,6 +134,7 @@ $('installBtn').onclick = promptInstall;
 whenInstallable((on) => ($('installBtn').hidden = !on));
 $('fsBtn').hidden = !(G.touch && canFullscreen());
 $('fsBtn').onclick = toggleFullscreen;
+$('arcadeBtn').onclick = openArcade;
 setUnlockHandler(UI.trophyToast);
 
 function refreshSound() {
@@ -140,6 +145,64 @@ function refreshSound() {
 function showMenu() {
   UI.renderMenu(selectChar);
   UI.show('menu');
+}
+
+// ---------- the arcade ----------
+function openArcade() {
+  initAudio();
+  UI.renderArcade(playArcade);
+  UI.show('arcade');
+}
+function playArcade(id) {
+  UI.show('minigame');
+  openMinigame(id, {
+    from: 'arcade',
+    onClose: () => {
+      G.state = 'menu';
+      checkAchievements();
+      openArcade();
+    },
+  });
+}
+
+// An arcade booth mid-run: the horde waits while you play, and stars pay out in power.
+function enterBooth() {
+  clearBooth();
+  resetJoystick();
+  clearTips();
+  UI.show('minigame');
+  openMinigame(null, { from: 'run', onResult: boothPrize, onClose: leaveBooth });
+}
+function boothPrize({ stars }) {
+  const p = G.player;
+  const lines = [];
+  if (stars === 0) {
+    p.hp = Math.min(p.maxHp, p.hp + 15);
+    return ['🍰 Consolation cake: +15 HP'];
+  }
+  p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.25);
+  G.goldThisRun += 3;
+  lines.push('❤️ Healed 25% · 🥕 +3 golden carrots');
+  if (stars >= 2) {
+    G.pendingLevels++;
+    lines.push('⬆️ A free level-up');
+  }
+  if (stars >= 3) {
+    G.pendingLevels++;
+    G.goldThisRun += 5;
+    G.ultCharge = G.stats.ultCost;
+    lines.push('🎰 JACKPOT: another level-up, 🥕 +5 and a full Carrot Strike');
+  }
+  save.life.booths = (save.life.booths || 0) + 1;
+  return lines;
+}
+function leaveBooth() {
+  G.state = 'countdown';
+  countT = COUNTDOWN;
+  G.player.invuln = Math.max(G.player.invuln, 1.2); // a moment to get your bearings in the crowd
+  UI.show();
+  UI.renderLoadout();
+  checkAchievements();
 }
 
 function selectChar(id) {
@@ -181,6 +244,8 @@ function resetRun() {
   clearWeapons();
   clearFx();
   clearMod();
+  clearBooth();
+  G.boothPending = false;
   G.passives = [];
   G.wave = 1;
   G.waveTime = 0;
@@ -263,6 +328,8 @@ function nextWave() {
     if (G.wave % 5 === 0) spawnBoss();
     else {
       banner(`WAVE ${G.wave}`, `${mod.emoji} ${mod.name}`);
+      // arcade booths: always on wave 3 so everyone meets one, then about every other wave
+      if (G.wave >= 3 && G.wave < FINAL_WAVE && (G.wave === 3 || Math.random() < 0.45)) G.boothPending = true;
       const id = runId;
       if (G.wave >= 3 && Math.random() < 0.6) setTimeout(() => id === runId && G.state === 'playing' && hordeEvent(), 2600);
     }
@@ -470,6 +537,12 @@ function tick(realDt) {
     G.hurtFlash -= realDt;
     G.bornFlash -= realDt;
     watch(realDt);
+    // the booth shows up a few seconds into the wave, after the wave banner
+    if (G.boothPending && G.waveTime > 5 && G.state === 'playing') {
+      G.boothPending = false;
+      if (spawnBooth()) tip('booth');
+    }
+    if (updateBooth(dt) && G.state === 'playing') enterBooth();
     if (G.remaining <= 0 && G.state === 'playing') onVictory();
     if (G.waveTime >= WAVE_LEN && G.state === 'playing') nextWave();
     if (G.pendingLevels > 0 && G.state === 'playing') openLevelUp();
@@ -500,6 +573,8 @@ function tick(realDt) {
     }
   } else if (G.state === 'wheel') {
     updateWheel(realDt);
+  } else if (G.state === 'minigame') {
+    updateMinigame(realDt);
   }
   input.ult = input.pause = false;
   goT -= realDt;
@@ -530,6 +605,7 @@ function render(dt, realDt) {
   drawPlayerShadow(p.x, p.z, 1.3);
   drawPickups();
   drawWeapons();
+  drawBooth();
 
   updateCamera(realDt);
 
@@ -575,10 +651,17 @@ window.__omr = {
   levelUp: () => G.pendingLevels++,
   ult: tryUlt,
   win: () => G.onVictory(),
+  minigame: playArcade,
+  booth: () => spawnBooth(),
   advance(seconds, step = 1 / 30) {
     for (let t = 0; t < seconds; t += step) {
       if (G.state === 'levelup') choose(currentOpts[0]);
       if (G.state === 'wheel') skipWheel();
+      // a minigame plays itself through (score 0) so long fast-forwards never stall on one
+      if (G.state === 'minigame') {
+        minigameAuto(step);
+        continue;
+      }
       updateFx(tick(step), step);
     }
   },

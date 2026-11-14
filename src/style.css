@@ -584,3 +584,80 @@ input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border-radius
   .logo .l2, .loader, #ultBtn.ready .ult-icon, .cup, .cf-em, .char.afford .price { animation: none; }
   .bit { display: none; }
 }
+
+/* ---------- arcade booth arrow ---------- */
+#boothArrow {
+  position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 2px; pointer-events: none; z-index: 3;
+  background: var(--gold); border: 3px solid var(--ink); border-radius: 999px; padding: 2px 8px 2px 6px; box-shadow: 0 4px 0 var(--ink);
+  font-weight: 900; font-size: 13px; animation: boothBob 0.8s ease-in-out infinite alternate;
+}
+#boothArrow .ba-em { font-size: 20px; line-height: 1; }
+#boothArrow .ba-arrow { display: inline-block; transform: rotate(var(--rot, 90deg)); font-size: 14px; }
+#boothArrow.closing { background: #ffd9d0; }
+@keyframes boothBob { to { margin-top: -6px; } }
+
+/* ---------- the arcade screen ---------- */
+.arcade-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; text-align: left; }
+.arcade-card {
+  font-family: var(--body); display: flex; gap: 12px; align-items: center; text-align: left; min-width: 0;
+  background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); padding: 10px 12px;
+}
+@media (hover: hover) { .arcade-card:hover { transform: translateY(-2px); } }
+.arcade-card .em { font-size: 38px; line-height: 1; }
+.arcade-card .info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.arcade-card .nm { font-family: var(--display); font-size: 19px; }
+.arcade-card .ds { font-size: 13px; font-weight: 800; color: var(--muted); }
+.arcade-card .meta { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 12px; font-weight: 900; }
+.arcade-card .ast i { font-style: normal; font-size: 16px; color: #d9d2e3; -webkit-text-stroke: 1px var(--ink); }
+.arcade-card .ast i.on { color: var(--gold); }
+.arcade-card .gp { background: var(--gold); border: 2px solid var(--ink); border-radius: 999px; padding: 0 7px; }
+.arcade-card .gp.done { background: #c9f5bf; }
+
+/* ---------- the minigame overlay ---------- */
+.mg-screen { padding: calc(10px + var(--st)) max(10px, var(--sr)) calc(10px + var(--sb)) max(10px, var(--sl)); }
+.mg-frame { width: min(780px, 100%); height: min(600px, 100%); display: flex; flex-direction: column; gap: 8px; margin: auto; }
+.mg-top { display: flex; align-items: center; gap: 10px; font-family: var(--display); color: #fff; -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+.mg-name { font-size: 22px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mg-score { font-size: 22px; }
+.mg-score b { font-weight: 400; font-variant-numeric: tabular-nums; }
+.mg-time { font-size: 22px; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+.mg-time.hurry { color: #ff8a8a; animation: pulse 0.5s infinite alternate; }
+.mg-quit { -webkit-text-stroke: 0; text-shadow: none; padding: 4px 10px; font-size: 16px; }
+.mg-stage { position: relative; flex: 1; min-height: 0; border: 4px solid var(--ink); border-radius: 18px; overflow: hidden; box-shadow: 0 8px 0 var(--ink); background: var(--grass); }
+#mgCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.mg-card {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100% - 28px)); max-height: calc(100% - 20px); overflow-y: auto;
+  background: var(--paper); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 8px 0 var(--ink); padding: 16px 18px; text-align: center;
+  display: flex; flex-direction: column; gap: 8px; align-items: center; animation: pop 0.3s cubic-bezier(.2,1.6,.4,1);
+}
+.mg-card h2 { font-family: var(--display); font-weight: 400; font-size: 32px; margin: 0; line-height: 1; }
+.mg-em { font-size: 52px; line-height: 1; }
+.mg-blurb { margin: 0; font-weight: 900; color: var(--carrot-dark); }
+.mg-how { margin: 0; font-weight: 800; font-size: 15px; line-height: 1.35; }
+.mg-goal { margin: 0; font-weight: 800; font-size: 13px; color: var(--muted); }
+.mg-stars { display: flex; gap: 6px; justify-content: center; }
+.mg-stars span { font-size: 46px; line-height: 1; color: #e3dceb; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+.mg-stars span.on { color: var(--gold); animation: pop 0.4s cubic-bezier(.2,1.6,.4,1) backwards; }
+.mg-stars span.on:nth-child(2) { animation-delay: 0.15s; }
+.mg-stars span.on:nth-child(3) { animation-delay: 0.3s; }
+.mg-final { margin: 0; font-weight: 900; font-size: 16px; }
+.mg-final b { font-family: var(--display); font-weight: 400; font-size: 30px; }
+.mg-best { background: var(--pink); color: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 0 8px; font-size: 13px; }
+.mg-prizes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-weight: 800; font-size: 14px; }
+.mg-prizes li { background: #fff4c7; border: 2px solid var(--ink); border-radius: 10px; padding: 3px 10px; }
+.mg-card .btn.big { font-size: 22px; padding: 8px 28px; }
+@media (max-width: 720px) {
+  .arcade-list { grid-template-columns: 1fr; }
+  .mg-frame { height: 100%; }
+  .mg-name { font-size: 18px; }
+  .mg-score, .mg-time { font-size: 19px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .mg-frame { width: 100%; height: 100%; gap: 4px; }
+  .mg-name, .mg-score, .mg-time { font-size: 17px; }
+  .mg-em { font-size: 34px; }
+  .mg-card { padding: 10px 14px; gap: 5px; }
+  .mg-card h2 { font-size: 24px; }
+  .mg-how { font-size: 13px; }
+  .mg-stars span { font-size: 32px; }
+}

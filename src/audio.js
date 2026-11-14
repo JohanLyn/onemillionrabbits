@@ -426,6 +426,8 @@ const inRun = (s) => s === 'playing' || s === 'levelup' || s === 'wheel' || s ==
 function wanted(st, now) {
   if (stopped || st === 'dying') return null;
   if (st === 'gameover' || st === 'victory') return now < quietUntil ? null : 'menu';
+  // a booth minigame keeps the run's music going; the title-screen Arcade keeps the menu theme
+  if (st === 'minigame') return G.mgFrom !== 'run' ? 'menu' : G.boss || music.boss ? 'boss' : 'main';
   if (!inRun(st)) return 'menu';
   return G.boss || music.boss ? 'boss' : 'main';
 }

@@ -5,9 +5,10 @@ import { WEAPONS, FUSIONS, weaponInfo } from './weapons.js';
 import { PASSIVES, SHOP, shopCost, describe } from './upgrades.js';
 import { ACHIEVEMENTS } from './achievements.js';
 import { sfx } from './audio.js';
+import { MINIGAMES, arcadeRecord, STAR_GOLD } from './minigames/index.js';
 
 const $ = (id) => document.getElementById(id);
-const SCREENS = ['menu', 'shop', 'howto', 'trophies', 'settings', 'credits', 'levelup', 'wheel', 'pause', 'gameover', 'victory', 'loading'];
+const SCREENS = ['menu', 'shop', 'howto', 'trophies', 'settings', 'credits', 'arcade', 'minigame', 'levelup', 'wheel', 'pause', 'gameover', 'victory', 'loading'];
 const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled])';
 
 export function show(...ids) {
@@ -496,3 +497,22 @@ export function bindButtons(h) {
   });
   initNav();
 }
+
+// ---------- the arcade ----------
+export function renderArcade(onPlay) {
+  const list = $('arcadeList');
+  list.innerHTML = '';
+  for (const m of MINIGAMES) {
+    const rec = arcadeRecord(m.id);
+    const left = STAR_GOLD.slice(rec.stars).reduce((a, b) => a + b, 0);
+    const b = document.createElement('button');
+    b.className = 'arcade-card';
+    b.innerHTML = `<span class="em">${m.emoji}</span><span class="info"><span class="nm">${m.name}</span><span class="ds">${m.blurb}</span>
+      <span class="meta"><span class="ast">${[0, 1, 2].map((i) => `<i class="${i < rec.stars ? 'on' : ''}">★</i>`).join('')}</span>
+      ${rec.plays ? `<span>best ${rec.best} ${m.unit}</span>` : '<span>not played yet</span>'}
+      ${left ? `<span class="gp">🥕 ${left} to win</span>` : '<span class="gp done">all stars!</span>'}</span></span>`;
+    b.onclick = () => onPlay(m.id);
+    list.appendChild(b);
+  }
+}
+
