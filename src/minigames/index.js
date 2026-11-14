@@ -233,7 +233,12 @@ export function updateMinigame(dt) {
   } else if (c.phase === 'play') {
     if (c.def.duration) c.timeLeft = Math.max(0, c.timeLeft - dt);
     c.game.update?.(dt);
-    if ((c.def.duration && c.timeLeft <= 0) || c.game.finished) end();
+    if (c.def.duration && c.timeLeft <= 0) end();
+    else if (c.game.finished) {
+      // a game that ends itself gets a beat to show its last answer before the results card
+      c.finishT = (c.finishT || 0) + dt;
+      if (c.finishT > 1.4) end();
+    }
   }
   c.pops.update(dt);
   c.shake = Math.max(0, c.shake - dt * 30);

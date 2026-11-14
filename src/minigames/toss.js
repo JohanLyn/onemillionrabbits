@@ -100,7 +100,7 @@ export default {
     keys: 'Hold Space (or the mouse) to heat the toaster, let go to launch flaming toast at the rabbits.',
   },
   duration: 25,
-  stars: [10, 22, 34],
+  stars: [10, 20, 30],
   unit: 'points',
   create(api) {
     const lvl = api.level;
