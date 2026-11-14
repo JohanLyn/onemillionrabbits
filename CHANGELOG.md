@@ -8,7 +8,8 @@ The first public beta. Install it on your phone, play it offline, and [tell us w
 
 - **You can win.** Beat the final boss on wave 30 for a victory screen, confetti and a big golden-carrot bonus (bigger the first time with each survivor). Wins are counted, and each survivor's card shows a 🏆.
 - **Difficulty levels.** 🐰 Fluffy, 🥕 Normal and 🔥 Rabid (+60% golden carrots), picked on the title screen. Normal is now harder than before in the middle and late game: tougher, faster and bigger hordes, harder-hitting rabbits and bosses, less free healing and slower levelling.
-- **Trophies.** 22 of them, each worth golden carrots, with pop-ups mid-run and a trophy shelf with progress bars and lifetime stats.
+- **The Arcade.** Five minigames (Whack-a-Rabbit, Carrot Catch, Hat Trick, Count the Horde and Toaster Toss) with star ratings, best scores and golden carrots for new stars. Play them from the title screen, or walk into an **arcade booth** that appears in the meadow mid-run to play for healing, level-ups and a jackpot.
+- **Trophies.** 25 of them, each worth golden carrots, with pop-ups mid-run and a trophy shelf with progress bars and lifetime stats.
 - **First-run tips.** Short, skippable coaching the first time each thing happens: moving, auto-fire, carrots, your first level-up, the counter going *up* from breeding, the Wheel of Chaos, bosses, golden bunnies, fusions and the Carrot Strike.
 - **Settings.** Music and effects volume, sound on/off, screen shake, damage numbers, vibrate when hit, tips, fullscreen, graphics quality (AUTO / FAST / PRETTY) and reset progress. Open them from the title screen or the pause menu.
 - **Install it.** The game is a PWA: add it to your home screen and it opens fullscreen and works offline.

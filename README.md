@@ -70,9 +70,25 @@ Pick a level under the survivors on the title screen. The first few waves play t
 | 🥕 **Normal** | The intended challenge. |
 | 🔥 **Rabid** | Much tougher, meaner, faster and bigger hordes, little healing, slower levelling. **+60% golden carrots**, and a trophy for winning. |
 
+### The Arcade
+
+Five quick minigames, each 15–30 seconds:
+
+| Minigame | What you do |
+|---|---|
+| 🔨 **Whack-a-Rabbit** | Bonk rabbits as they pop out of their holes. Golden ones pay triple, chonks take two bonks, bomb bunnies cost you. |
+| 🧺 **Carrot Catch** | Steer a basket and catch falling carrots. Dodge the falling bomb bunnies. |
+| 🎩 **Hat Trick** | A shell game: keep your eye on the golden carrot while the top hats shuffle. |
+| 🔢 **Count the Horde** | A stampede thunders past. How many rabbits was that? |
+| 🍞 **Toaster Toss** | Charge and launch flaming toast at rabbits across the meadow. |
+
+Play them from **🎪 ARCADE** on the title screen. Each minigame has three stars to earn, and the first time you earn each star it pays golden carrots.
+
+**Arcade booths** also pop up in the meadow during a run (always on wave 3, then about every other wave). An arrow points the way. Walk into a booth before it packs up and a random minigame starts while the horde waits. Stars pay out in power: ⭐ heals you and gives golden carrots, ⭐⭐ adds a free level-up, ⭐⭐⭐ hits the jackpot with another level-up and a full Carrot Strike.
+
 ### Trophies
 
-22 trophies, each worth golden carrots: beat a boss, cook a fusion, catch a golden bunny, let 500 babies be born (oops), win on Rabid, win with every survivor... Pop-ups appear mid-run, and the **TROPHIES** screen shows your shelf, progress bars and lifetime stats.
+25 trophies, each worth golden carrots: beat a boss, cook a fusion, catch a golden bunny, let 500 babies be born (oops), win on Rabid, three-star every minigame, win with every survivor... Pop-ups appear mid-run, and the **TROPHIES** screen shows your shelf, progress bars and lifetime stats.
 
 ### Winning
 
@@ -121,6 +137,7 @@ The finale is **The Rabbit Queen**: a giant crowned rabbit with a purple cape an
 1. **Rabbits breed.** Rabbits left alive near each other fall in love (💕), and a baby pops out that grows up into a full rabbit. The "rabbits to go" counter **goes up** and flashes pink. A slow, careful player gets buried, so you need to clear the horde fast. The boss summons babies too.
 2. **The Wheel of Chaos.** At the start of every wave a game-show wheel spins and bends one rule for that wave: Fancy Hats (double XP), Moon Gravity, Giant Rabbits, Turbo Tuesday, Carrot Rain, Disco Inferno (the meadow turns into a dance floor), Spring Fever (4× breeding, uh oh), Glass Cannon, Slow-Mo Horde, Jelly World and Super Magnet.
 3. **Weapon fusion.** Max out two compatible weapons and a golden **FUSION** card appears that merges them into something dumber. The full cookbook is under *How to play*.
+4. **Arcade booths.** Minigames are built into the run: a booth appears in the middle of the horde, and stepping inside swaps the bullet heaven for a quick game of Whack-a-Rabbit or Toaster Toss, with power-ups as prizes.
 
 ## 🍞 The arsenal
 
@@ -201,6 +218,7 @@ src/
   achievements.js  trophies, and spotting game events from the shared state
   save.js      progress and settings in localStorage
   pwa.js       install prompt, service worker, fullscreen
+  minigames/   the Arcade: framework (index.js), drawing kit, arcade booth and one file per minigame
 public/        web manifest, icons, service worker (copied next to index.html)
 scripts/       postbuild, smoke test, screenshot tour, balance bot, icon renderer
 ```
