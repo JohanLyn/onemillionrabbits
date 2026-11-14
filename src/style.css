@@ -623,10 +623,11 @@ input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border-radius
 .mg-time { font-size: 22px; min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
 .mg-time.hurry { color: #ff8a8a; animation: pulse 0.5s infinite alternate; }
 .mg-quit { -webkit-text-stroke: 0; text-shadow: none; padding: 4px 10px; font-size: 16px; }
-.mg-stage { position: relative; flex: 1; min-height: 0; border: 4px solid var(--ink); border-radius: 18px; overflow: hidden; box-shadow: 0 8px 0 var(--ink); background: var(--grass); }
+.mg-stage { position: relative; display: grid; place-items: center; flex: 1; min-height: 0; border: 4px solid var(--ink); border-radius: 18px; overflow: hidden; box-shadow: 0 8px 0 var(--ink); background: var(--grass); }
 #mgCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 .mg-card {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100% - 28px)); max-height: calc(100% - 20px); overflow-y: auto;
+  /* centred by the stage's grid, so the pop-in animation is free to use transform */
+  position: relative; width: min(420px, calc(100% - 28px)); max-height: calc(100% - 20px); overflow-y: auto;
   background: var(--paper); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 8px 0 var(--ink); padding: 16px 18px; text-align: center;
   display: flex; flex-direction: column; gap: 8px; align-items: center; animation: pop 0.3s cubic-bezier(.2,1.6,.4,1);
 }
